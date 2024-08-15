@@ -115,9 +115,9 @@ func (db *DB) merge() error {
 				if err = hintFile.Write(encLogRecord); err != nil {
 					return err
 				}
-				// 维护offset
-				off += sz
 			}
+			// 维护offset
+			off += sz
 		}
 	}
 	// 持久化DB与hint file

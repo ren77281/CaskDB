@@ -259,8 +259,8 @@ func (db *DB) appendLogRecord(logRecord *data.LogRecord) (*data.LogRecordPos, er
 
 // 创建新的活跃文件（替换当前活跃文件，不会保存！！！）
 func (db *DB) newActiveFile() error {
-	// fileId从0开始，是一个递增序列
-	var fileId uint32 = 0
+	// fileId从1开始，是一个递增序列
+	var fileId uint32 = 1
 	if db.activeFile != nil {
 		fileId = db.activeFile.FileId + 1
 	}

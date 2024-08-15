@@ -54,13 +54,13 @@ func EncodeLogRecordPos(logRecordPos *LogRecordPos) []byte {
 	encLogRecordPos := make([]byte, binary.MaxVarintLen32+binary.MaxVarintLen64)
 	var idx = 0
 	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.Fid))
-	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.Offset))
+	idx += binary.PutVarint(encLogRecordPos[idx:], logRecordPos.Offset)
 	return encLogRecordPos[:idx]
 }
 
 func DecodeLogRecordPos(datas []byte) *LogRecordPos {
 	var idx = 0
-	fid, n := binary.Varint(datas[idx:])
+	fid, n := binary.Uvarint(datas[idx:])
 	idx += n
 	offset, _ := binary.Varint(datas[idx:])
 	return &LogRecordPos{
