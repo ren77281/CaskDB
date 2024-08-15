@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	DataFileNameSuffix    string = ".data"
-	HintFileName          string = "hint-index"
-	MergeFilishedFileName string = "merge-finish"
+	DataFileNameSuffix       string = ".data"
+	HintFileName             string = "hint-index"
+	MergeFilishedFileName    string = "merge-finish"
+	NextWriteBatchIdFileName string = "wbid"
 )
 
 var (
@@ -39,17 +40,21 @@ func newDataFile(fileName string, fileId uint32) (*DataFile, error) {
 	}, nil
 }
 
-// TODO:这些函数调用关系似乎有点乱, dirPath与filename的拼接... 
+// TODO:这些函数调用关系似乎有点乱, dirPath与filename的拼接...
+
+func OpenWriteBatchFile(dirPath string) (*DataFile, error) {
+	fileName := filepath.Join(dirPath, NextWriteBatchIdFileName)
+	return newDataFile(fileName, 0)
+}
 
 // 打开文件，并保存其IO方法到DataFile中
 func OpenDataFile(dirPath string, fileId uint32) (*DataFile, error) {
-	fileName := GetDataFileName(dirPath, fileId)
+	fileName := GetDataFileNameById(dirPath, fileId)
 	return newDataFile(fileName, fileId)
-
 }
 
 // 通过目录名与文件id构造data file文件名
-func GetDataFileName(dirPath string, fileId uint32) string {
+func GetDataFileNameById(dirPath string, fileId uint32) string {
 	return filepath.Join(dirPath, fmt.Sprintf("%09d", fileId)+DataFileNameSuffix)
 }
 

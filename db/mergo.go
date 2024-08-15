@@ -190,7 +190,7 @@ func (db *DB) loadMergeFiles() error {
 	// 删除原数据目录中，被merge过的file
 	var fileId uint32 = 0
 	for ; fileId <= maxMergeFileId; fileId++ {
-		fileName := data.GetDataFileName(db.opts.DirPath, fileId)
+		fileName := data.GetDataFileNameById(db.opts.DirPath, fileId)
 		if _, err := os.Stat(fileName); err == nil {
 			if err := os.RemoveAll(fileName); err != nil {
 				return nil

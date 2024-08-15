@@ -7,7 +7,10 @@ import (
 	"sync/atomic"
 )
 
-const zeroWbId uint64 = 0
+const (
+	zeroWbId uint64 = 0
+	wbIbKey  string = "wbidkey"
+)
 
 var wbFinKey = []byte("wb-finsh") // 最后提交的finsh record的key
 
@@ -82,7 +85,7 @@ func (writeBatch *WriteBatch) Commit() error {
 	writeBatch.db.mu.Lock()
 	defer writeBatch.db.mu.Unlock()
 	// 获取wbId
-	id := atomic.AddUint64(&writeBatch.db.id, 1)
+	id := atomic.AddUint64(&writeBatch.db.wbId, 1)
 	// TODO:如果先大量更新，然后再全部删除，那么维护index时，也先更新再删除，是否是无效操作？
 	// 还是说这里的两个map不够优雅？
 	updatePos := make(map[string]*data.LogRecordPos)

@@ -90,7 +90,7 @@ func TestBTreeIterator1(t *testing.T) {
 		assert.False(t, iter.IsEnd())
 
 		iter.Rewind()
-		assert.Equal(t, iter.Size(), 1)
+		assert.Equal(t, bt.Size(), 1)
 		assert.Equal(t, iter.Key(), key1)
 		assert.Equal(t, iter.Value(), &val1)
 		assert.False(t, iter.IsEnd())
@@ -110,7 +110,7 @@ func TestBTreeIterator2(t *testing.T) {
 		bt.Put(key2, &val2)
 
 		iter := bt.NewIterator(false)
-		assert.Equal(t, iter.Size(), 2)
+		assert.Equal(t, bt.Size(), 2)
 		assert.False(t, iter.IsEnd())
 
 		assert.Equal(t, iter.Key(), key1)
@@ -144,7 +144,7 @@ func TestBTreeIterator3(t *testing.T) {
 		bt.Put(key2, &val2)
 
 		iter := bt.NewIterator(true)
-		assert.Equal(t, iter.Size(), 2)
+		assert.Equal(t, bt.Size(), 2)
 		assert.False(t, iter.IsEnd())
 
 		assert.Equal(t, iter.Key(), key2)

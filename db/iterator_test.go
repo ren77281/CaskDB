@@ -66,7 +66,7 @@ func TestDBIter2(t *testing.T) {
 		}
 		itopts := DefaultItOptions
 		iter := db.NewIterator(itopts)
-		assert.Equal(t, iter.indexIter.Size(), 1000)
+		assert.Equal(t, db.index.Size(), 1000)
 		assert.False(t, iter.IsEnd())
 		for i := 0; i < 1000; i++ {
 			assert.False(t, iter.IsEnd())
@@ -102,7 +102,7 @@ func TestDBIter3(t *testing.T) {
 		itopts := DefaultItOptions
 		itopts.Reverse = true
 		iter := db.NewIterator(itopts)
-		assert.Equal(t, iter.indexIter.Size(), 1000)
+		assert.Equal(t, db.index.Size(), 1000)
 		assert.False(t, iter.IsEnd())
 		for i := 999; i >= 0; i-- {
 			assert.False(t, iter.IsEnd())
@@ -145,7 +145,7 @@ func TestDBIter4(t *testing.T) {
 		itopts := DefaultItOptions
 		itopts.Prefix = []byte("go-kv-key")
 		iter := db.NewIterator(itopts)
-		assert.Equal(t, iter.indexIter.Size(), 1000)
+		assert.Equal(t, db.index.Size(), 1000)
 		assert.False(t, iter.IsEnd())
 		for i := 0; i < 1000; i += 2 {
 			assert.False(t, iter.IsEnd())
@@ -189,7 +189,7 @@ func TestDBIter5(t *testing.T) {
 		itopts.Prefix = []byte("go-kv-key")
 		itopts.Reverse = true
 		iter := db.NewIterator(itopts)
-		assert.Equal(t, iter.indexIter.Size(), 1000)
+		assert.Equal(t, db.index.Size(), 1000)
 		assert.False(t, iter.IsEnd())
 		for i := 998; i >= 0; i -= 2 {
 			assert.False(t, iter.IsEnd())

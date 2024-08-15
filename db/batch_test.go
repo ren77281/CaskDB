@@ -144,6 +144,6 @@ func TestBatchPutCommitDeleteRestart(t *testing.T) {
 			assert.Equal(t, val, vals[i])
 		}
 		// 检验wbId
-		assert.Equal(t, db.id, uint64(2))
+		assert.Equal(t, db.wbId, uint64(2))
 	}
 }

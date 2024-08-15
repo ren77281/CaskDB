@@ -70,7 +70,7 @@ func TestMerge3(t *testing.T) {
 	db, err := Open(opts)
 	assert.Nil(t, err)
 	defer destoryDB(db)
-	cnt := 10000
+	cnt := 100000
 	// 写入重复数据后，merge，再重启，看这些数据是否存在
 	{
 		keys := make([][]byte, cnt)

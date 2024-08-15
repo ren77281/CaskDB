@@ -14,13 +14,15 @@ import (
 
 // DB 数据库实例
 type DB struct {
-	activeFile   *data.DataFile            // 活跃文件的信息
-	inActivaFile map[uint32]*data.DataFile // 不活跃文件的信息
-	index        index.Indexer             // key在内存中的索引
-	opts         DBOptions                 // 用户的配置选项
-	mu           *sync.RWMutex             // 用于多线程并发安全
-	id           uint64                    // 用于支持原子写操作，表示事务id
-	isMerge      bool                      // 是否正在进行merge操作
+	activeFile     *data.DataFile            // 活跃文件的信息
+	inActivaFile   map[uint32]*data.DataFile // 不活跃文件的信息
+	index          index.Indexer             // key在内存中的索引
+	opts           DBOptions                 // 用户的配置选项
+	mu             *sync.RWMutex             // 用于多线程并发安全
+	wbId           uint64                    // 用于支持原子写操作，表示事务id
+	isMerge        bool                      // 是否正在进行merge操作
+	wbIdFileExists bool                      // wbIdFile是否存在
+	isInitial      bool                      // 是否第一次初始化数据目录
 }
 
 // 打开/创建数据库实例
@@ -29,21 +31,33 @@ func Open(opts DBOptions) (*DB, error) {
 	if err := checkOptions(opts); err != nil {
 		return nil, err
 	}
+	var isInitial = false
 	// 检查数据库目录是否存在
 	if _, err := os.Stat(opts.DirPath); os.IsNotExist(err) {
+		isInitial = true
 		if err := os.MkdirAll(opts.DirPath, os.ModePerm); err != nil {
 			return nil, err
 		}
 	}
+	// 判断是否第一次初始化数据目录
+	entrys, err := os.ReadDir(opts.DirPath)
+	if err != nil {
+		return nil, err
+	}
+	if len(entrys) == 0 {
+		isInitial = true
+	}
 	// 构建 DB 实例
 	db := &DB{
 		inActivaFile: make(map[uint32]*data.DataFile),
-		index:        index.NewIndexer(opts.Indexer),
+		index:        index.NewIndexer(opts.Indexer, opts.DirPath, opts.AlwaysSync),
 		opts:         opts,
 		mu:           new(sync.RWMutex),
+		isInitial:    isInitial,
+
 	}
 	// 加载data file与index
-	if err := db.loadDataFileAndIndex(); err != nil {
+	if err := db.loadDataFileAndIndex(opts); err != nil {
 		return nil, err
 	}
 	return db, nil
@@ -57,8 +71,29 @@ func (db *DB) Close() error {
 	if db.activeFile == nil {
 		return nil
 	}
+	// 先关闭index
+	if err := db.index.Close(); err != nil {
+		return err
+	}
+	// 保存wbid到指定文件中
+	wbIdFile, err := data.OpenWriteBatchFile(db.opts.DirPath)
+	if err != nil {
+		return err
+	}
+	logRecord := &data.LogRecord{
+		Key:   []byte(wbIbKey),
+		Value: []byte(strconv.FormatUint(db.wbId, 10)),
+	}
+	encRecord, _ := data.EncodeLogRecord(logRecord)
+	if err := wbIdFile.Write(encRecord); err != nil {
+		return err
+	}
+	if err := wbIdFile.Sync(); err != nil {
+		return err
+	}
+
 	// 先持久化活跃文件再关闭
-	err := db.activeFile.Sync()
+	err = db.activeFile.Sync()
 	if err != nil {
 		return err
 	}
@@ -66,7 +101,7 @@ func (db *DB) Close() error {
 	if err != nil {
 		return err
 	}
-	// 因为不活跃文件已经关闭，所以直接关闭即可
+	// 因为不活跃文件已经持久化，所以直接关闭即可
 	for _, file := range db.inActivaFile {
 		err := file.Close()
 		if err != nil {
@@ -118,7 +153,7 @@ func (db *DB) Put(key []byte, value []byte) error {
 func (db *DB) ListKeys(reverse bool) [][]byte {
 	// 获取内存index的迭代器，遍历index
 	iter := db.index.NewIterator(reverse)
-	keys := make([][]byte, 0, iter.Size())
+	keys := make([][]byte, 0, db.index.Size())
 	for iter.Rewind(); !iter.IsEnd(); iter.Next() {
 		keys = append(keys, iter.Key())
 	}
@@ -274,7 +309,7 @@ func (db *DB) newActiveFile() error {
 }
 
 // 加载data file
-func (db *DB) loadDataFileAndIndex() error {
+func (db *DB) loadDataFileAndIndex(opts DBOptions) error {
 	// 优先加载合并后的文件
 	if err := db.loadMergeFiles(); err != nil {
 		return err
@@ -312,12 +347,29 @@ func (db *DB) loadDataFileAndIndex() error {
 			db.inActivaFile[uint32(fileId)] = dataFile
 		}
 	}
-	// 加载index信息，先从hint file中加载
-	if err := db.loadIndexFromHintFile(); err != nil {
-		return err
-	}
-	if err := db.loadIndexFromDataFile(fileIds); err != nil {
-		return err
+	if opts.Indexer != index.BPlusTreeType {
+		// 加载index信息，先从hint file中加载
+		if err := db.loadIndexFromHintFile(); err != nil {
+			return err
+		}
+		if err := db.loadIndexFromDataFile(fileIds); err != nil {
+			return err
+		}
+	} else {
+		// B+ tree不用从磁盘加载index，因为它用磁盘存储了index
+		// 只需要加载wbIdFile
+		if err := db.loadWbIdFile(); err != nil {
+			return err
+		}
+		// 还需要保存活跃文件的writeOff，这里耦合度太高了？？？
+		if db.activeFile != nil {
+			sz, err := db.activeFile.IoManager.Size()
+			if err != nil {
+				return err
+			}
+			// 直接读取文件大小也能获取writeOff
+			db.activeFile.WriteOff = sz
+		}
 	}
 	return nil
 }
@@ -410,8 +462,30 @@ func (db *DB) loadIndexFromDataFile(fileIds []int) error {
 		}
 	}
 	// 最后更新wbId
-	db.id = maxWbId
+	db.wbId = maxWbId
 	return nil
+}
+
+// 从指定文件中加载wbid
+func (db *DB) loadWbIdFile() error {
+	fileName := filepath.Join(db.opts.DirPath, data.NextWriteBatchIdFileName)
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		return nil
+	}
+	// 打开指定文件并读取record，提取出wbid
+	wbIdFile, err := data.OpenWriteBatchFile(db.opts.DirPath)
+	if err != nil {
+		return err
+	}
+	logRecord, _, err := wbIdFile.ReadLogRecord(0)
+	if err != nil {
+		return err
+	}
+	id, err := strconv.ParseUint(string(logRecord.Value), 10, 64)
+	db.wbId = id
+	db.wbIdFileExists = true
+	// TODO!!! 这里删除wbIdFile是否有必要？
+	return os.Remove(fileName)
 }
 
 // 检查用户配置的选项

@@ -9,16 +9,6 @@ import (
 	"github.com/google/btree"
 )
 
-// btree的节点封装，将k-v封装成Item, 实现Less特征即可
-type Item struct {
-	key []byte
-	pos *data.LogRecordPos
-}
-
-func (l *Item) Less(r btree.Item) bool {
-	return bytes.Compare(l.key, r.(*Item).key) == -1
-}
-
 // 封装google的btree，TODO: 是否有必要加锁？
 type BTree struct {
 	tree *btree.BTree
@@ -41,11 +31,11 @@ func NewBTree() *BTree {
 
 func (bt *BTree) Get(key []byte) *data.LogRecordPos {
 	it := &Item{key: key}
-	btreeItem := bt.tree.Get(it)
-	if btreeItem == nil {
+	item := bt.tree.Get(it)
+	if item == nil {
 		return nil
 	}
-	return btreeItem.(*Item).pos
+	return item.(*Item).pos
 }
 
 func (bt *BTree) Put(key []byte, pos *data.LogRecordPos) bool {
@@ -59,9 +49,21 @@ func (bt *BTree) Put(key []byte, pos *data.LogRecordPos) bool {
 func (bt *BTree) Delete(key []byte) bool {
 	it := &Item{key: key}
 	bt.lock.Lock()
-	btreeItem := bt.tree.Delete(it)
+	item := bt.tree.Delete(it)
 	bt.lock.Unlock()
-	return btreeItem != nil
+	return item != nil
+}
+
+func (bt *BTree) Size() int {
+	return bt.tree.Len()
+}
+
+func (bt *BTree) Close() error {
+	return nil
+}
+
+func (l *Item) Less(r btree.Item) bool {
+	return bytes.Compare(l.key, r.(*Item).key) == -1
 }
 
 // 返回迭代器接口
@@ -98,43 +100,39 @@ func NewBTreeIterator(tree *btree.BTree, reverse bool) *BTreeIterator {
 	}
 }
 
-func (btreeIt *BTreeIterator) Size() int {
-	return len(btreeIt.datas)
+func (it *BTreeIterator) Rewind() {
+	it.idx = 0
 }
 
-func (btreeIt *BTreeIterator) Rewind() {
-	btreeIt.idx = 0
+func (it *BTreeIterator) Key() []byte {
+	return it.datas[it.idx].key
 }
 
-func (btreeIt *BTreeIterator) Key() []byte {
-	return btreeIt.datas[btreeIt.idx].key
+func (it *BTreeIterator) Value() *data.LogRecordPos {
+	return it.datas[it.idx].pos
 }
 
-func (btreeIt *BTreeIterator) Value() *data.LogRecordPos {
-	return btreeIt.datas[btreeIt.idx].pos
+func (it *BTreeIterator) Next() {
+	it.idx++
 }
 
-func (btreeIt *BTreeIterator) Next() {
-	btreeIt.idx++
+func (it *BTreeIterator) IsEnd() bool {
+	return it.idx >= len(it.datas)
 }
 
-func (btreeIt *BTreeIterator) IsEnd() bool {
-	return btreeIt.idx >= len(btreeIt.datas)
+func (it *BTreeIterator) Close() {
+	it.datas = nil
 }
 
-func (btreeIt *BTreeIterator) Close() {
-	btreeIt.datas = nil
-}
-
-func (btreeIt *BTreeIterator) Seek(key []byte) {
-	if !btreeIt.reverse {
+func (it *BTreeIterator) Seek(key []byte) {
+	if !it.reverse {
 		// sort.Search是二分查找，闭包将把数组划分成两个区间，Search将返回区间的分界点
-		btreeIt.idx = sort.Search(len(btreeIt.datas), func(i int) bool {
-			return bytes.Compare(btreeIt.datas[i].key, key) >= 0
+		it.idx = sort.Search(len(it.datas), func(i int) bool {
+			return bytes.Compare(it.datas[i].key, key) >= 0
 		})
 	} else {
-		btreeIt.idx = sort.Search(len(btreeIt.datas), func(i int) bool {
-			return bytes.Compare(btreeIt.datas[i].key, key) <= 0
+		it.idx = sort.Search(len(it.datas), func(i int) bool {
+			return bytes.Compare(it.datas[i].key, key) <= 0
 		})
 	}
 }

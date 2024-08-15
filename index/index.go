@@ -9,7 +9,15 @@ type IndexType = int8
 const (
 	// BTree index
 	BTreeType IndexType = iota
+	BPlusTreeType
+	ARTreeType
 )
+
+// 索引的节点封装，将k-v封装成Item, 实现Less特征即可
+type Item struct {
+	key []byte
+	pos *data.LogRecordPos
+}
 
 // 索引特征
 type Indexer interface {
@@ -21,6 +29,10 @@ type Indexer interface {
 	Delete(key []byte) bool
 	// 创建索引上的迭代器
 	NewIterator(reverse bool) Iterator
+	// 索引中的数据数量
+	Size() int
+	// 关闭索引
+	Close() error
 }
 
 // 索引的迭代器特征
@@ -37,17 +49,19 @@ type Iterator interface {
 	Key() []byte
 	// 取value
 	Value() *data.LogRecordPos
-	// 索引结构中元素的数量
-	Size() int
 	// 关闭迭代器
 	Close()
 }
 
 // TODO:添加更多index type
-func NewIndexer(indexerType IndexType) Indexer {
+func NewIndexer(indexerType IndexType, dirPath string, sync bool) Indexer {
 	switch indexerType {
 	case BTreeType:
 		return NewBTree()
+	case BPlusTreeType:
+		return NewBPlusTree(dirPath, sync)
+	case ARTreeType:
+		return NewARTree()
 	default:
 		return nil
 	}
