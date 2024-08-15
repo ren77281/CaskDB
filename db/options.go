@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// 用户的DB配置选项
+// DB配置选项
 type DBOptions struct {
 	// 数据文件所在目录
 	DirPath string
@@ -25,7 +25,7 @@ var DefaultDBOptions = DBOptions{
 	Indexer:      index.BTreeType,
 }
 
-// 用户的迭代器配置选项
+// 迭代器配置选项
 type ItOptions struct {
 	Prefix  []byte // key的前缀信息
 	Reverse bool   // 是否反向遍历
@@ -33,6 +33,18 @@ type ItOptions struct {
 
 // 默认迭代器配置
 var DefaultItOptions = ItOptions{
-	Prefix: nil,
+	Prefix:  nil,
 	Reverse: false,
+}
+
+// WriteBatch配置选项
+type WBOptions struct {
+	Sync        bool // 是否序列化
+	MaxWriteNum uint // 最大写入数量
+}
+
+// 默认WriteBatch配置
+var DefaultWBOptions = WBOptions{
+	Sync: true,
+	MaxWriteNum: 100000,
 }

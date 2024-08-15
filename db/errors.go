@@ -6,12 +6,15 @@ import (
 
 // 描述数据库运行时可能出现的错误
 var (
-	errEmptyKey              = errors.New("the key is empty")
-	errUpdateIndexFailed     = errors.New("can not update index")
-	errKeyNotFound           = errors.New("can not found the key")
-	errDataFileNotFound      = errors.New("can not found data file")
-	errDeletedKey            = errors.New("the key is deleted")
-	errInvalidDirPath        = errors.New("directory path is invailded")
-	errInvalidDataFileSize   = errors.New("data file size is invailded")
-	errDataFileNameCorrupted = errors.New("data file name is corrupted")
+	ErrEmptyKey              = errors.New("the key is empty")
+	ErrUpdateIndexFailed     = errors.New("can not update index")
+	ErrKeyNotFound           = errors.New("can not found the key")
+	ErrDataFileNotFound      = errors.New("can not found data file")
+	ErrDeletedKey            = errors.New("the key is deleted")
+	ErrInvalidDirPath        = errors.New("directory path is invailded")
+	ErrInvalidDataFileSize   = errors.New("data file size is invailded")
+	ErrDataFileNameCorrupted = errors.New("data file name is corrupted")
+	ErrExceedMaxWriteNum     = errors.New("too many writes")
+	ErrInvalidRecordType     = errors.New("invalid record type exists")
+	ErrDBMerging             = errors.New("db is merging")
 )

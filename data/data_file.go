@@ -9,7 +9,11 @@ import (
 	"path/filepath"
 )
 
-const DataFileNameSuffix string = ".data"
+const (
+	DataFileNameSuffix    string = ".data"
+	HintFileName          string = "hint-index"
+	MergeFilishedFileName string = "merge-finish"
+)
 
 var (
 	ErrInvalidCrc    = errors.New("invalid crc, log record is not right")
@@ -23,9 +27,7 @@ type DataFile struct {
 	IoManager fio.IoManager // 提供IO方法的接口
 }
 
-// 打开文件，并保存其IO方法到DataFile中
-func OpenDataFile(dirPath string, fileId uint32) (*DataFile, error) {
-	fileName := filepath.Join(dirPath, fmt.Sprintf("%09d", fileId)+DataFileNameSuffix)
+func newDataFile(fileName string, fileId uint32) (*DataFile, error) {
 	iomanager, err := fio.NewIoManager(fileName, fio.FileIoType)
 	if err != nil {
 		return nil, err
@@ -37,8 +39,36 @@ func OpenDataFile(dirPath string, fileId uint32) (*DataFile, error) {
 	}, nil
 }
 
+// TODO:这些函数调用关系似乎有点乱, dirPath与filename的拼接... 
+
+// 打开文件，并保存其IO方法到DataFile中
+func OpenDataFile(dirPath string, fileId uint32) (*DataFile, error) {
+	fileName := GetDataFileName(dirPath, fileId)
+	return newDataFile(fileName, fileId)
+
+}
+
+// 通过目录名与文件id构造data file文件名
+func GetDataFileName(dirPath string, fileId uint32) string {
+	return filepath.Join(dirPath, fmt.Sprintf("%09d", fileId)+DataFileNameSuffix)
+}
+
+// 创建并打开merge finish file
+func OpenMergeFinsihedFile(dirPath string) (*DataFile, error) {
+	fileName := filepath.Join(dirPath, MergeFilishedFileName)
+	return newDataFile(fileName, 0)
+}
+
+// 创建并打开hint file
+// TODO!!! 如果已经发生了merge，那么hintfile的fid为0是否会影响下一次的merge？？？
+// !!! 同理finishfile的fid为0呢？？？
+func OpenHintFile(dirPath string) (*DataFile, error) {
+	fileName := filepath.Join(dirPath, HintFileName)
+	return newDataFile(fileName, 0)
+}
+
 // 往文件末尾追加 datas
-func (dataFile *DataFile) Append(datas []byte) error {
+func (dataFile *DataFile) Write(datas []byte) error {
 	// 调用文件的Write方法
 	n, err := dataFile.IoManager.Write(datas)
 	if err != nil {
@@ -91,7 +121,7 @@ func (dataFile *DataFile) ReadLogRecord(off int64) (*LogRecord, int64, error) {
 	}
 	recordSize := headerSize + keySize + valueSize
 	// 构造LogRecord
-	logRecord := &LogRecord{LogRecordType: logRecordHeader.logRecordType}
+	logRecord := &LogRecord{Typ: logRecordHeader.logRecordType}
 	// 继续调用readNBytes读取key与value
 	kvBuf, err := dataFile.readNBytes(keySize+valueSize, off+headerSize)
 	if err != nil {

@@ -7,24 +7,33 @@ import (
 
 type DBIterator struct {
 	indexIter index.Iterator // index迭代器，用来在内存中遍历key
-	db        *DB         // DB实例，用来访问磁盘中的value
-	opts      ItOptions   // 迭代器配置选项
+	db        *DB            // DB实例，用来访问磁盘中的value
+	opts      ItOptions      // 迭代器配置选项
 }
 
 func (dbIter *DBIterator) NextByPrefix() {
 	var n = len(dbIter.opts.Prefix)
-	if n != 0 {
+	if n == 0 {
 		return
 	}
 	// 往后遍历，找到一个前缀相同的key
 	for ; !dbIter.indexIter.IsEnd(); dbIter.indexIter.Next() {
-		if n != 0 {
-			var key = dbIter.indexIter.Key()
-			if len(key) >= n && bytes.Equal(dbIter.opts.Prefix, key[:n]) {
-				break
-			}
+		var key = dbIter.indexIter.Key()
+		if len(key) >= n && bytes.Equal(dbIter.opts.Prefix, key[:n]) {
+			break
 		}
 	}
+}
+
+// 获取数据库的迭代器
+func (db *DB) NewIterator(opts ItOptions) *DBIterator {
+	dbIter := &DBIterator{
+		indexIter: db.index.NewIterator(opts.Reverse),
+		db:        db,
+		opts:      opts,
+	}
+	dbIter.Rewind()
+	return dbIter
 }
 
 func (dbIter *DBIterator) Rewind() {

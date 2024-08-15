@@ -10,6 +10,7 @@ type LogRecordType = byte
 const (
 	LogRecordNormal = iota
 	LogRecordDeleted
+	LogRecordFinished
 )
 
 // header的最大size: 4 + 1 + 5 + 5
@@ -17,9 +18,9 @@ const maxLogRecordHeadSize = binary.MaxVarintLen32*2 + 5
 
 // LogRecord 描述k-v记录
 type LogRecord struct {
-	Key           []byte
-	Value         []byte
-	LogRecordType LogRecordType
+	Key   []byte
+	Value []byte
+	Typ   LogRecordType
 }
 
 // +---------+----------+-------------------+--------------------+
@@ -41,11 +42,38 @@ type LogRecordPos struct {
 	Offset int64  // Offset 记录在文件中的偏移量
 }
 
+// 存储WriteBatch的record信息
+type WBLogRecord struct {
+	Key []byte
+	Pos *LogRecordPos
+	Typ LogRecordType
+}
+
+// encodeRecordPos 将LogRecordPos序列化成[]byte
+func EncodeLogRecordPos(logRecordPos *LogRecordPos) []byte {
+	encLogRecordPos := make([]byte, binary.MaxVarintLen32+binary.MaxVarintLen64)
+	var idx = 0
+	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.Fid))
+	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.Offset))
+	return encLogRecordPos[:idx]
+}
+
+func DecodeLogRecordPos(datas []byte) *LogRecordPos {
+	var idx = 0
+	fid, n := binary.Varint(datas[idx:])
+	idx += n
+	offset, _ := binary.Varint(datas[idx:])
+	return &LogRecordPos{
+		Fid:    uint32(fid),
+		Offset: offset,
+	}
+}
+
 // EncodeRecord 将LogRecord序列化成[]byte
 func EncodeLogRecord(logRecord *LogRecord) ([]byte, int64) {
 	// encode header部分
 	header := make([]byte, maxLogRecordHeadSize)
-	header[4] = logRecord.LogRecordType
+	header[4] = logRecord.Typ
 	// encode key size, value size
 	var idx = 5
 	idx += binary.PutVarint(header[idx:], int64(len(logRecord.Key)))

@@ -17,18 +17,18 @@ func TestDataFileOpen(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestDataFileAppend(t *testing.T) {
+func TestDataFileWrite(t *testing.T) {
 	df, err := OpenDataFile(os.TempDir(), 1)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("aaaaaa"))
+	err = df.Write([]byte("aaaaaa"))
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("ccccc"))
+	err = df.Write([]byte("ccccc"))
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("bbbbb"))
+	err = df.Write([]byte("bbbbb"))
 	assert.Nil(t, err)
 }
 
@@ -37,13 +37,13 @@ func TestDataFileCloseSync(t *testing.T) {
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("aaaaaa"))
+	err = df.Write([]byte("aaaaaa"))
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("ccccc"))
+	err = df.Write([]byte("ccccc"))
 	assert.Nil(t, err)
 
-	err = df.Append([]byte("bbbbb"))
+	err = df.Write([]byte("bbbbb"))
 	assert.Nil(t, err)
 	
 	err = df.Sync()
@@ -62,10 +62,10 @@ func TestDataFileRead(t *testing.T) {
 		lr := &LogRecord{
 			Key: utils.GetTestKey(1),
 			Value: utils.GetTestValue(100),
-			LogRecordType: LogRecordNormal,
+			Typ: LogRecordNormal,
 		}
 		datas, sz := EncodeLogRecord(lr)
-		err := df.Append(datas)
+		err := df.Write(datas)
 		assert.Nil(t, err)
 		// 读取被写入的record
 		llr, ssz, err := df.ReadLogRecord(offset)
@@ -88,10 +88,10 @@ func TestDataFileRead(t *testing.T) {
 	lr := &LogRecord{
 		Key: utils.GetTestKey(10),
 		Value: utils.GetTestValue(100),
-		LogRecordType: LogRecordNormal,
+		Typ: LogRecordNormal,
 	}
 	datas, sz := EncodeLogRecord(lr)
-	err = df.Append(datas)
+	err = df.Write(datas)
 	assert.Nil(t, err)
 	// 读取被写入的record
 	llr, ssz, err := df.ReadLogRecord(offset)
@@ -116,12 +116,12 @@ func TestDataFileRead(t *testing.T) {
 			lr3 := &LogRecord{
 				Key: utils.GetTestKey(1),
 				Value: utils.GetTestValue(100),
-				LogRecordType: LogRecordNormal,
+				Typ: LogRecordNormal,
 			}
 			lrs3 = append(lrs3, lr3)
 			datas, sz3 := EncodeLogRecord(lr3)
 			sizes3 = append(sizes3, sz3)
-			err := df3.Append(datas)
+			err := df3.Write(datas)
 			assert.Nil(t, err)
 		}
 		var offset3 int64 = 0
@@ -149,12 +149,12 @@ func TestDataFileRead(t *testing.T) {
 		lr4 := &LogRecord{
 			Key: utils.GetTestKey(1),
 			Value: utils.GetTestValue(100),
-			LogRecordType: LogRecordDeleted,
+			Typ: LogRecordDeleted,
 		}
 		lrs4 = append(lrs4, lr4)
 		datas, sz3 := EncodeLogRecord(lr4)
 		sizes4 = append(sizes4, sz3)
-		err := df4.Append(datas)
+		err := df4.Write(datas)
 		assert.Nil(t, err)
 	}
 	var offset4 int64 = 0
@@ -164,13 +164,13 @@ func TestDataFileRead(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, lrs4[i], llr)
 		assert.Equal(t, sizes4[i], ssz)
-		assert.Equal(t, llr.LogRecordType, byte(LogRecordDeleted))
+		assert.Equal(t, llr.Typ, byte(LogRecordDeleted))
 		// 再次读取
 		llr, ssz, err = df4.ReadLogRecord(offset4)
 		assert.Nil(t, err)
 		assert.Equal(t, lrs4[i], llr)
 		assert.Equal(t, sizes4[i], ssz)
-		assert.Equal(t, llr.LogRecordType, byte(LogRecordDeleted))
+		assert.Equal(t, llr.Typ, byte(LogRecordDeleted))
 		offset4 += ssz
 	}
 }

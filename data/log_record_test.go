@@ -11,7 +11,7 @@ func TestEncodeNormal(t *testing.T) {
 	logRecord := &LogRecord{
 		Key: []byte("abcd"),
 		Value: []byte("1111"),
-		LogRecordType: LogRecordNormal,
+		Typ: LogRecordNormal,
 	}
 	// encode
 	b1, sz := EncodeLogRecord(logRecord)
@@ -21,7 +21,7 @@ func TestEncodeNormal(t *testing.T) {
 	// value为空
 	logRecord2 := &LogRecord{
 		Key: []byte("abc"),
-		LogRecordType: LogRecordNormal,
+		Typ: LogRecordNormal,
 	}
 	b2, sz := EncodeLogRecord(logRecord2)
 	assert.NotNil(t, b2)
@@ -31,7 +31,7 @@ func TestEncodeNormal(t *testing.T) {
 	logRecord3 := &LogRecord{
 		Key: []byte("ab"),
 		Value: []byte("aaaa"),
-		LogRecordType: LogRecordDeleted,
+		Typ: LogRecordDeleted,
 	}
 	b3, sz := EncodeLogRecord(logRecord3)
 	assert.NotNil(t, b3)
@@ -72,7 +72,7 @@ func TestGetLogRecordCRC(t *testing.T) {
 	rec1 := &LogRecord{
 		Key:   []byte("name"),
 		Value: []byte("bitcask-go"),
-		LogRecordType:  LogRecordNormal,
+		Typ:  LogRecordNormal,
 	}
 	headerBuf1 := []byte{104, 82, 240, 150, 0, 8, 20}
 	crc1 := getLogRecordCRC(rec1, headerBuf1[crc32.Size:])
@@ -80,7 +80,7 @@ func TestGetLogRecordCRC(t *testing.T) {
 
 	rec2 := &LogRecord{
 		Key:  []byte("name"),
-		LogRecordType:  LogRecordNormal,
+		Typ:  LogRecordNormal,
 	}
 	headerBuf2 := []byte{9, 252, 88, 14, 0, 8, 0}
 	crc2 := getLogRecordCRC(rec2, headerBuf2[crc32.Size:])
@@ -89,7 +89,7 @@ func TestGetLogRecordCRC(t *testing.T) {
 	rec3 := &LogRecord{
 		Key:   []byte("name"),
 		Value: []byte("bitcask-go"),
-		LogRecordType:  LogRecordDeleted,
+		Typ:  LogRecordDeleted,
 	}
 	headerBuf3 := []byte{43, 153, 86, 17, 1, 8, 20}
 	crc3 := getLogRecordCRC(rec3, headerBuf3[crc32.Size:])

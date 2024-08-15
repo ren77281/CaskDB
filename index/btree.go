@@ -119,7 +119,7 @@ func (btreeIt *BTreeIterator) Next() {
 }
 
 func (btreeIt *BTreeIterator) IsEnd() bool {
-	return btreeIt.idx < len(btreeIt.datas)
+	return btreeIt.idx >= len(btreeIt.datas)
 }
 
 func (btreeIt *BTreeIterator) Close() {

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"kv-go/utils"
 	"os"
 	"testing"
@@ -14,7 +15,7 @@ func destoryDB(db *DB) {
 		if db.activeFile != nil {
 			db.Close()
 		}
-		err := os.RemoveAll(db.options.DirPath)
+		err := os.RemoveAll(db.opts.DirPath)
 		if err != nil {
 			panic(err)
 		}
@@ -35,7 +36,6 @@ func TestPutGet(t *testing.T) {
 	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-put")
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
-	defer destoryDB(db)
 	assert.NotNil(t, db)
 	assert.Nil(t, err)
 
@@ -72,7 +72,7 @@ func TestPutGet(t *testing.T) {
 	{
 		// put 一条 key为empty 的k-v
 		err := db.Put(nil, utils.GetTestValue(24))
-		assert.Equal(t, err, errEmptyKey)
+		assert.Equal(t, err, ErrEmptyKey)
 	}
 
 	{
@@ -205,15 +205,15 @@ func TestDelete(t *testing.T) {
 		assert.Nil(t, err)
 		res2, err := db.Get(utils.GetTestKey(1))
 		assert.NotNil(t, err)
-		assert.Equal(t, err, errKeyNotFound)
+		assert.Equal(t, err, ErrKeyNotFound)
 		assert.Nil(t, res2)
 
 		err = db.Delete(utils.GetTestKey(1))
 		assert.NotNil(t, err)
-		assert.Equal(t, err, errKeyNotFound)
+		assert.Equal(t, err, ErrKeyNotFound)
 		res3, err := db.Get(utils.GetTestKey(1))
 		assert.NotNil(t, err)
-		assert.Equal(t, err, errKeyNotFound)
+		assert.Equal(t, err, ErrKeyNotFound)
 		assert.Nil(t, res3)
 
 		val4 := utils.GetTestValue(128)
@@ -228,7 +228,7 @@ func TestDelete(t *testing.T) {
 		// 删除key为empty 的k-v
 		err := db.Delete(nil)
 		assert.NotNil(t, err)
-		assert.Equal(t, err, errEmptyKey)
+		assert.Equal(t, err, ErrEmptyKey)
 	}
 
 	{
@@ -262,7 +262,137 @@ func TestDelete(t *testing.T) {
 			res, err := db2.Get(utils.GetTestKey(i))
 			assert.Nil(t, res)
 			assert.NotNil(t, err)
-			assert.NotNil(t, err, errKeyNotFound)
+			assert.NotNil(t, err, ErrKeyNotFound)
 		}
+	}
+}
+
+func TestDBListKeys1(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-listkeys")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+	{
+		// 没有数据
+		keys := db.ListKeys(false)
+		assert.Equal(t, len(keys), 0)
+	}
+
+	{
+		// 一条数据
+		db.Put(utils.GetTestKey(1), utils.GetTestKey(128))
+		keys := db.ListKeys(false)
+		assert.Equal(t, len(keys), 1)
+		assert.Equal(t, keys[0], utils.GetTestKey(1))
+	}
+}
+
+func TestDBListKeys2(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-listkeys")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+
+	{
+		// 多条数据
+		var keys [][]byte 
+		for i := 0; i < 10000; i++ {
+			key := utils.GetTestKey(i)
+			keys = append(keys, key)
+			db.Put(key, utils.GetTestValue(128))
+		}
+		listKeys := db.ListKeys(false)
+		assert.Equal(t, len(keys), 10000)
+		for i := 0; i < 10000; i++ {
+			assert.Equal(t, keys[i], listKeys[i])
+		}
+	}
+}
+
+func TestDBFold1(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-fold")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+	
+	{
+		// 插入多条数据，并通过fold验证数据的正确插入
+		var keys [][]byte
+		var vals [][]byte
+		for i := 0; i < 10000; i++ {
+			key := utils.GetTestKey(i)
+			val := utils.GetTestValue(128)
+			keys = append(keys, key)
+			vals = append(vals, val)
+			err := db.Put(key, val)
+			assert.Nil(t, err)
+		}
+		var i = 0
+		db.Fold(func(key []byte, val []byte) bool {
+			res := bytes.Equal(keys[i], key) && bytes.Equal(vals[i], val)
+			i++
+			return res
+		})
+	}
+}
+
+func TestDBClose1(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-close")
+	db, err := Open(opts)
+	assert.Nil(t, err)
+	
+	{
+		// 直接关闭
+		err := db.Close()
+		assert.Nil(t, err)
+	}
+}
+
+func TestDBClose2(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-close")
+	db, err := Open(opts)
+	assert.Nil(t, err)
+	
+	{
+		// 插入数据后再关闭
+		for i := 0; i < 10000; i++ {
+			key := utils.GetTestKey(i)
+			val := utils.GetTestValue(128)
+			err := db.Put(key, val)
+			assert.Nil(t, err)
+		}
+		err := db.Close()
+		assert.Nil(t, err)
+	}
+}
+
+func TestDBSync(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-sync")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+
+	{
+		// 直接持久化
+		err := db.Sync()
+		assert.Nil(t, err)
+	}
+
+	{
+		// 插入数据后进行持久化
+		for i := 0; i < 10000; i++ {
+			key := utils.GetTestKey(i)
+			val := utils.GetTestValue(128)
+			err := db.Put(key, val)
+			assert.Nil(t, err)
+		}
+		err := db.Sync()
+		assert.Nil(t, err)
 	}
 }
