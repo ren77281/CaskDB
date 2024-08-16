@@ -1,12 +1,13 @@
 package fio
 
-type IoType = byte
+type IOType = byte
 
 const (
-	FileIoType = iota
+	FileIOType = iota
+	MMapIOType
 )
 
-type IoManager interface {
+type IOManager interface {
 	Read(b []byte, off int64) (int, error)
 	Write(b []byte) (int, error)
 	Sync() error
@@ -14,11 +15,13 @@ type IoManager interface {
 	Size() (int64, error)
 }
 
-func NewIoManager(name string, ioType IoType) (IoManager, error) {
+func NewIOManager(fileName string, ioType IOType) (IOManager, error) {
 	switch ioType {
-	case FileIoType:
-		return NewFileIoManager(name)
+	case FileIOType:
+		return NewFileIOManager(fileName)
+	case MMapIOType:
+		return NewMMapIOManager(fileName)
 	default:
-		panic("unsupport")
+		panic("IO unsupport")
 	}
 }

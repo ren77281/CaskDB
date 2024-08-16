@@ -177,6 +177,9 @@ func (db *DB) loadMergeFiles() error {
 		if fileName == data.MergeFilishedFileName {
 			finished = true
 		}
+		if fileName == data.NextWriteBatchIdFileName {
+			continue
+		}
 		fileNames = append(fileNames, fileName)
 	}
 	if !finished {

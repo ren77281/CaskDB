@@ -29,6 +29,9 @@ func NewARTree() *ARTree {
 
 // 插入key-LogRecordPos
 func (art *ARTree) Put(key []byte, pos *data.LogRecordPos) bool {
+	if len(key) == 0 {
+		return false
+	}
 	art.lock.Lock()
 	defer art.lock.Unlock()
 	art.tree.Insert(key, pos)
@@ -73,14 +76,14 @@ func NewARTIterator(art *ARTree, reverse bool) *ARTIterator {
 	if reverse {
 		i = art.Size() - 1
 	}
-	datas := make([]*Item, 0)
+	datas := make([]*Item, art.Size())
 	saveItems := func (item goart.Node) bool {
 		key := item.Key()
 		val := item.Value().(*data.LogRecordPos)
-		datas = append(datas, &Item{
+		datas[i] = &Item{
 			key: key,
 			pos: val,
-		})
+		}
 		if reverse {
 			i--
 		} else {

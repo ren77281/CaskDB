@@ -17,4 +17,6 @@ var (
 	ErrExceedMaxWriteNum     = errors.New("too many writes")
 	ErrInvalidRecordType     = errors.New("invalid record type exists")
 	ErrDBMerging             = errors.New("db is merging")
+	ErrDBUsing               = errors.New("db is using")
+	errTest = errors.New("test")
 )

@@ -8,7 +8,7 @@ type FileIo struct {
 	fd *os.File
 }
 
-func NewFileIoManager(name string) (*FileIo, error) {
+func NewFileIOManager(name string) (*FileIo, error) {
 	fd, err := os.OpenFile(name, os.O_CREATE|os.O_APPEND|os.O_RDWR, DataFilePerm)
 	if err != nil {
 		return nil, err

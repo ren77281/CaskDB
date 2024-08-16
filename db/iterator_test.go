@@ -20,6 +20,7 @@ func TestDBIterNew(t *testing.T) {
 	iter := db.NewIterator(itopts)
 	assert.NotNil(t, iter)
 	assert.True(t, iter.IsEnd())
+	iter.Close()
 }
 
 func TestDBIter1(t *testing.T) {
@@ -41,6 +42,7 @@ func TestDBIter1(t *testing.T) {
 		assert.Equal(t, iter.Key(), key1)
 		itval1, _ := iter.Value()
 		assert.Equal(t, itval1, val1)
+		iter.Close()
 	}
 }
 
@@ -76,6 +78,7 @@ func TestDBIter2(t *testing.T) {
 			iter.Next()
 		}
 		assert.True(t, iter.IsEnd())
+		iter.Close()
 	}
 }
 
@@ -112,6 +115,7 @@ func TestDBIter3(t *testing.T) {
 			iter.Next()
 		}
 		assert.True(t, iter.IsEnd())
+		iter.Close()
 	}
 }
 
@@ -155,6 +159,7 @@ func TestDBIter4(t *testing.T) {
 			iter.Next()
 		}
 		assert.True(t, iter.IsEnd())
+		iter.Close()
 	}
 }
 
@@ -199,5 +204,6 @@ func TestDBIter5(t *testing.T) {
 			iter.Next()
 		}
 		assert.True(t, iter.IsEnd())
+		iter.Close()
 	}
 }

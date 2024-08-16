@@ -13,10 +13,10 @@ func DeleteFile(name string) {
 	}
 }
 
-func TestNewFileIoManager(t *testing.T) {
+func TestNewFileIOManager(t *testing.T) {
 	path := filepath.Join("../tmp", "tmp.data")
 	defer DeleteFile(path)
-	fio, err := NewFileIoManager(path)
+	fio, err := NewFileIOManager(path)
 	assert.Nil(t, err)
 	assert.NotNil(t, fio)
 }
@@ -24,7 +24,7 @@ func TestNewFileIoManager(t *testing.T) {
 func TestFileIoReadWrite(t *testing.T) {
 	path := filepath.Join("../tmp", "tmp.data")
 	defer DeleteFile(path)
-	fio, err := NewFileIoManager(path)
+	fio, err := NewFileIOManager(path)
 	assert.Nil(t, err)
 	assert.NotNil(t, fio)
 
@@ -50,7 +50,7 @@ func TestFileIoReadWrite(t *testing.T) {
 func TestClose(t *testing.T) {
 	path := filepath.Join("../tmp", "tmp.data")
 	defer DeleteFile(path)
-	fio, err := NewFileIoManager(path)
+	fio, err := NewFileIOManager(path)
 	assert.Nil(t, err)
 	assert.NotNil(t, fio)
 
@@ -61,7 +61,7 @@ func TestClose(t *testing.T) {
 func TestSync(t *testing.T) {
 	path := filepath.Join("../tmp", "tmp.data")
 	defer DeleteFile(path)
-	fio, err := NewFileIoManager(path)
+	fio, err := NewFileIOManager(path)
 	assert.Nil(t, err)
 	assert.NotNil(t, fio)
 

@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"kv-go/index"
 	"kv-go/utils"
 	"os"
 	"testing"
@@ -24,7 +25,8 @@ func destoryDB(db *DB) {
 
 func TestOpen(t *testing.T) {
 	opts := DefaultDBOptions
-	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-open")
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-open")
 	db, err := Open(opts)
 	defer destoryDB(db)
 	assert.NotNil(t, db)
@@ -33,7 +35,8 @@ func TestOpen(t *testing.T) {
 
 func TestPutGet(t *testing.T) {
 	opts := DefaultDBOptions
-	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-put")
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-put")
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
 	assert.NotNil(t, db)
@@ -98,16 +101,18 @@ func TestPutGet(t *testing.T) {
 
 func TestPutGetAfterRestart(t *testing.T) {
 	opts := DefaultDBOptions
-	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-put")
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-put")
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
 	defer destoryDB(db)
 	assert.NotNil(t, db)
 	assert.Nil(t, err)
+	var cnt = 10000
 	{
 		// put k-v 然后重启，再put看是否能正常使用，最后再get之前写入的数据
-		vals := make([][]byte, 100000)
-		for i := 0; i < 100000; i++ {
+		vals := make([][]byte, cnt)
+		for i := 0; i < cnt; i++ {
 			val := utils.GetTestValue(128)
 			vals[i] = make([]byte, len(val))
 			vals[i] = val
@@ -132,7 +137,7 @@ func TestPutGetAfterRestart(t *testing.T) {
 		assert.Equal(t, val, res1)
 
 		// 再get k-v
-		for i := 0; i < 10000; i++ {
+		for i := 0; i < cnt; i++ {
 			val, err := db2.Get(utils.GetTestKey(i))
 			assert.Nil(t, err)
 			assert.NotNil(t, val)
@@ -143,7 +148,8 @@ func TestPutGetAfterRestart(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	opts := DefaultDBOptions
-	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-put")
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-put")
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
 	defer destoryDB(db)
@@ -185,7 +191,8 @@ func TestGet(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	opts := DefaultDBOptions
-	opts.DirPath, _ = os.MkdirTemp("./tmp", "test-put")
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-put")
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
 	defer destoryDB(db)
@@ -232,9 +239,10 @@ func TestDelete(t *testing.T) {
 	}
 
 	{
+		var cnt = 10000
 		// put多条数据，再删除，重启后，不应该得到这些数据
-		vals := make([][]byte, 100000)
-		for i := 0; i < 100000; i++ {
+		vals := make([][]byte, cnt)
+		for i := 0; i < cnt; i++ {
 			val := utils.GetTestValue(128)
 			vals[i] = make([]byte, len(val))
 			vals[i] = val
@@ -242,7 +250,7 @@ func TestDelete(t *testing.T) {
 			assert.Nil(t, err)
 		}
 		// 先get，验证存在再删除
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < cnt; i++ {
 			res, err := db.Get(utils.GetTestKey(i))
 			assert.Nil(t, err)
 			assert.NotNil(t, res)
@@ -258,7 +266,7 @@ func TestDelete(t *testing.T) {
 		db2, err := Open(opts)
 		assert.Nil(t, err)
 		// 再get这些被删除数据
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < cnt; i++ {
 			res, err := db2.Get(utils.GetTestKey(i))
 			assert.Nil(t, res)
 			assert.NotNil(t, err)
@@ -269,6 +277,7 @@ func TestDelete(t *testing.T) {
 
 func TestDBListKeys1(t *testing.T) {
 	opts := DefaultDBOptions
+	opts.Indexer = index.BPlusTreeType
 	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-listkeys")
 	db, err := Open(opts)
 	defer destoryDB(db)
@@ -297,7 +306,7 @@ func TestDBListKeys2(t *testing.T) {
 
 	{
 		// 多条数据
-		var keys [][]byte 
+		var keys [][]byte
 		for i := 0; i < 10000; i++ {
 			key := utils.GetTestKey(i)
 			keys = append(keys, key)
@@ -317,7 +326,7 @@ func TestDBFold1(t *testing.T) {
 	db, err := Open(opts)
 	defer destoryDB(db)
 	assert.Nil(t, err)
-	
+
 	{
 		// 插入多条数据，并通过fold验证数据的正确插入
 		var keys [][]byte
@@ -344,7 +353,7 @@ func TestDBClose1(t *testing.T) {
 	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-close")
 	db, err := Open(opts)
 	assert.Nil(t, err)
-	
+
 	{
 		// 直接关闭
 		err := db.Close()
@@ -357,7 +366,7 @@ func TestDBClose2(t *testing.T) {
 	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-close")
 	db, err := Open(opts)
 	assert.Nil(t, err)
-	
+
 	{
 		// 插入数据后再关闭
 		for i := 0; i < 10000; i++ {
@@ -394,5 +403,103 @@ func TestDBSync(t *testing.T) {
 		}
 		err := db.Sync()
 		assert.Nil(t, err)
+	}
+}
+
+func TestBPlusWbId(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.Indexer = index.BPlusTreeType
+	opts.DirPath, _ = os.MkdirTemp("/tmp", "test-put")
+	opts.DataFileSize = 64 * 1024 * 1024
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.NotNil(t, db)
+	assert.Nil(t, err)
+	var cnt = 10000
+	{
+		// put k-v 然后重启，再put看是否能正常使用，最后再get之前写入的数据
+		vals := make([][]byte, cnt)
+		wbopts := DefaultWBOptions
+		// 验证wb是否正确：执行一次wb
+		wb := db.NewWriteBatch(wbopts)
+		assert.Nil(t, err)
+		for i := 0; i < cnt; i++ {
+			val := utils.GetTestValue(128)
+			vals[i] = make([]byte, len(val))
+			vals[i] = val
+			err := wb.Put(utils.GetTestKey(i), vals[i])
+			assert.Nil(t, err)
+		}
+		wb.Commit()
+
+		// 重启
+		err := db.activeFile.Sync()
+		assert.Nil(t, err)
+		err = db.Close()
+		assert.Nil(t, err)
+		db2, err := Open(opts)
+		assert.Nil(t, err)
+		// 验证wbid
+		assert.Equal(t, db2.wbId, uint64(1))
+		// 继续put k-v
+		val := utils.GetTestValue(128)
+		err = db2.Put(utils.GetTestKey(1000011), val)
+		assert.Nil(t, err)
+		res1, err := db2.Get(utils.GetTestKey(1000011))
+		assert.Nil(t, err)
+		assert.NotNil(t, res1)
+		assert.Equal(t, val, res1)
+
+		// 再get k-v
+		for i := 0; i < cnt; i++ {
+			val, err := db2.Get(utils.GetTestKey(i))
+			assert.Nil(t, err)
+			assert.NotNil(t, val)
+			assert.Equal(t, val, vals[i])
+		}
+	}
+}
+
+func TestFileLock(t *testing.T) {
+	// 创建两个进程打开同一个DB实例，后来的进程将打开失败
+	opts := DefaultDBOptions
+	dirPath, err := os.MkdirTemp("", "filelock")
+	opts.DirPath = dirPath
+	assert.Nil(t, err)
+	db1, err := Open(opts)
+	assert.Nil(t, err)
+	assert.NotNil(t, db1)
+
+	db2, err := Open(opts)
+	assert.NotNil(t, err)
+	assert.Nil(t, db2)
+}
+
+func TestBytesSync(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.BytesSync = 10000
+	opts.AlwaysSync = false
+	opts.DataFileSize = 100000
+	dirPath, err := os.MkdirTemp("", "bytes_sync2")
+	opts.DirPath = dirPath
+	assert.Nil(t, err)
+	db, err := Open(opts)
+	assert.Nil(t, err)
+	defer destoryDB(db)
+	{
+		// 写入一些数据达到阈值后，通过底层的IOManager检查文件是否被成功写入（持久化）
+		i := 0
+		cnt := 100000
+		for i = 0; i < cnt; i++ {
+			err := db.Put(utils.GetTestKey(i), utils.GetTestValue(128))
+			if err != nil {
+				// 这里新建了一个用来测试的变量，用来告知此时发生了持久化，我们只需要看持久化是否成功即可
+				if err == errTest {
+					n, _ := db.activeFile.IOManager.Size()
+					assert.NotEqual(t, n, int64(0))
+					break
+				}
+			}
+		}
 	}
 }

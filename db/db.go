@@ -1,15 +1,23 @@
 package db
 
 import (
+	"fmt"
 	"io"
 	"kv-go/data"
 	"kv-go/index"
+	"kv-go/fio"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gofrs/flock"
+)
+
+var (
+	fileLockName = "filelock"
 )
 
 // DB 数据库实例
@@ -23,6 +31,8 @@ type DB struct {
 	isMerge        bool                      // 是否正在进行merge操作
 	wbIdFileExists bool                      // wbIdFile是否存在
 	isInitial      bool                      // 是否第一次初始化数据目录
+	fileLock       *flock.Flock              // 用于保持进程互斥的文件锁
+	writeBytes     int64                     // 为持久化的字节数
 }
 
 // 打开/创建数据库实例
@@ -39,6 +49,15 @@ func Open(opts DBOptions) (*DB, error) {
 			return nil, err
 		}
 	}
+	// 获取文件锁TODO!!!是否要检查文件的存在
+	fileLock := flock.New(filepath.Join(opts.DirPath, fileLockName))
+	hold, err := fileLock.TryLock()
+	if err != nil {
+		return nil, err
+	}
+	if !hold {
+		return nil, ErrDBUsing
+	}
 	// 判断是否第一次初始化数据目录
 	entrys, err := os.ReadDir(opts.DirPath)
 	if err != nil {
@@ -54,11 +73,17 @@ func Open(opts DBOptions) (*DB, error) {
 		opts:         opts,
 		mu:           new(sync.RWMutex),
 		isInitial:    isInitial,
-
+		fileLock:     fileLock,
 	}
 	// 加载data file与index
 	if err := db.loadDataFileAndIndex(opts); err != nil {
 		return nil, err
+	}
+	// 如果用户选择了mmap以加载文件，需要重置IO类型为file IO
+	if opts.MMapStartUp {
+		if err := db.resetToFileIOType(); err != nil {
+			return nil, err
+		}
 	}
 	return db, nil
 }
@@ -66,6 +91,12 @@ func Open(opts DBOptions) (*DB, error) {
 // TODO: Close Sync可以多次调用，没有设置脏位！
 // 关闭数据库，返回失败的具体原因
 func (db *DB) Close() error {
+	// Close的最后释放文件锁
+	defer func() {
+		if err := db.fileLock.Unlock(); err != nil {
+			panic(fmt.Sprintf("failed to unlock file, %v", err))
+		}
+	}()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if db.activeFile == nil {
@@ -150,6 +181,27 @@ func (db *DB) Put(key []byte, value []byte) error {
 	return nil
 }
 
+func (db *DB) resetToFileIOType() error {
+	if db.activeFile == nil {
+		return nil
+	}
+	err := db.activeFile.ResetIOManager(filepath.Join(
+		data.GetDataFileNameById(db.opts.DirPath, db.activeFile.FileId)),
+		fio.FileIOType)
+	if err != nil {
+		return err
+	}
+	for _, dataFile := range db.inActivaFile {
+		err := dataFile.ResetIOManager(
+			data.GetDataFileNameById(db.opts.DirPath, dataFile.FileId),
+			fio.FileIOType)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (db *DB) ListKeys(reverse bool) [][]byte {
 	// 获取内存index的迭代器，遍历index
 	iter := db.index.NewIterator(reverse)
@@ -157,6 +209,7 @@ func (db *DB) ListKeys(reverse bool) [][]byte {
 	for iter.Rewind(); !iter.IsEnd(); iter.Next() {
 		keys = append(keys, iter.Key())
 	}
+	iter.Close()
 	return keys
 }
 
@@ -284,6 +337,16 @@ func (db *DB) appendLogRecord(logRecord *data.LogRecord) (*data.LogRecordPos, er
 		if err := db.activeFile.Sync(); err != nil {
 			return nil, err
 		}
+	} else if !db.opts.AlwaysSync {
+		db.writeBytes += sz
+		if db.opts.BytesSync > 0 && db.writeBytes >= db.opts.BytesSync {
+			// 如果满足持久化阈值就持久化，并重置未持久化的字节数
+			db.writeBytes = 0
+			if err := db.activeFile.Sync(); err != nil {
+				return nil, err
+			}
+			return nil, errTest
+		}
 	}
 	// 构造记录的位置信息LogRecordPos
 	return &data.LogRecordPos{
@@ -300,7 +363,7 @@ func (db *DB) newActiveFile() error {
 		fileId = db.activeFile.FileId + 1
 	}
 	// 在数据库目录下，创建新的数据文件
-	dataFile, err := data.OpenDataFile(db.opts.DirPath, fileId)
+	dataFile, err := data.OpenDataFile(db.opts.DirPath, fileId, fio.FileIOType)
 	if err != nil {
 		return err
 	}
@@ -333,10 +396,17 @@ func (db *DB) loadDataFileAndIndex(opts DBOptions) error {
 	}
 	// 对fileIds进行排序
 	sort.Ints(fileIds)
+	// 根据DB配置，决定加载文件时的IO类型
+	var dataFileIOType fio.IOType
+	if opts.MMapStartUp {
+		dataFileIOType = fio.MMapIOType
+	} else {
+		dataFileIOType = fio.FileIOType
+	}
 	// 加载data file信息
 	for i, fileId := range fileIds {
 		// 根据fileId打开文件，并加载数据到dataFile中
-		dataFile, err := data.OpenDataFile(db.opts.DirPath, uint32(fileId))
+		dataFile, err := data.OpenDataFile(db.opts.DirPath, uint32(fileId), dataFileIOType)
 		if err != nil {
 			return err
 		}
@@ -363,7 +433,7 @@ func (db *DB) loadDataFileAndIndex(opts DBOptions) error {
 		}
 		// 还需要保存活跃文件的writeOff，这里耦合度太高了？？？
 		if db.activeFile != nil {
-			sz, err := db.activeFile.IoManager.Size()
+			sz, err := db.activeFile.IOManager.Size()
 			if err != nil {
 				return err
 			}
@@ -486,6 +556,18 @@ func (db *DB) loadWbIdFile() error {
 	db.wbIdFileExists = true
 	// TODO!!! 这里删除wbIdFile是否有必要？
 	return os.Remove(fileName)
+}
+
+func (db *DB) NewWriteBatch(opts WBOptions) *WriteBatch {
+	if db.opts.Indexer == index.BPlusTreeType && !db.wbIdFileExists && !db.isInitial {
+		return nil
+	}
+	return &WriteBatch{
+		opts:          opts,
+		db:            db,
+		pendingWrites: make(map[string]*data.LogRecord),
+		mu:            new(sync.Mutex),
+	}
 }
 
 // 检查用户配置的选项

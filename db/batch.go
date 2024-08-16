@@ -22,15 +22,6 @@ type WriteBatch struct {
 
 }
 
-func (db *DB) NewWriteBatch(opts WBOptions) *WriteBatch {
-	return &WriteBatch{
-		opts:          opts,
-		db:            db,
-		pendingWrites: make(map[string]*data.LogRecord),
-		mu:            new(sync.Mutex),
-	}
-}
-
 // 写入数据到暂存区
 func (writeBatch *WriteBatch) Put(key []byte, value []byte) error {
 	writeBatch.mu.Lock()

@@ -2,12 +2,14 @@ package index
 
 import (
 	"kv-go/data"
+	"os"
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBTreePut(t *testing.T) {
-	bt := NewBTree()
+func TestBPlusTreePut(t *testing.T) {
+	bt := NewBPlusTree("/tmp", false)
 	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
 
@@ -18,8 +20,8 @@ func TestBTreePut(t *testing.T) {
 	assert.False(t, res3)
 }
 
-func TestBTreeGet(t *testing.T) {
-	bt := NewBTree()
+func TestBPlusTreeGet(t *testing.T) {
+	bt := NewBPlusTree("/tmp", false)
 
 	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
@@ -31,7 +33,7 @@ func TestBTreeGet(t *testing.T) {
 	assert.False(t, res3)
 
 	res4 := bt.Get([]byte("a"))
-	t.Log(res4)
+	assert.NotNil(t, res4)
 	assert.Equal(t, res4.Fid, uint32(1))
 	assert.Equal(t, res4.Offset, int64(2))
 	
@@ -39,8 +41,8 @@ func TestBTreeGet(t *testing.T) {
 	assert.Nil(t, res5)
 }
 
-func TestBTreeDelete(t *testing.T) {
-	bt := NewBTree()
+func TestBPlusTreeDelete(t *testing.T) {
+	bt := NewBPlusTree("/tmp", false)
 
 	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
@@ -61,15 +63,15 @@ func TestBTreeDelete(t *testing.T) {
 	assert.Nil(t, res6)
 }
 
-func TestBTreeIterator1(t *testing.T) {
-	bt := NewBTree()
-
+func TestBPlusTreeIterator1(t *testing.T) {
+	os.RemoveAll("/tmp/index-bptree")
+	bt := NewBPlusTree("/tmp", false)
 	{
 		// 没有数据
 		iter := bt.NewIterator(false)
 		assert.True(t, iter.IsEnd())
+		iter.Close()
 	}
-
 	{
 		// 插入一条
 		key1 := []byte("1")
@@ -90,8 +92,9 @@ func TestBTreeIterator1(t *testing.T) {
 	}
 }
 
-func TestBTreeIterator2(t *testing.T) {
-	bt := NewBTree()
+func TestBPlusTreeIterator2(t *testing.T) {
+	os.RemoveAll("/tmp/index-bptree")
+	bt := NewBPlusTree("/tmp", false)
 	{
 		// 插入多条数据，并测试seek
 		key1, key2 := []byte("2"), []byte("3")
@@ -124,8 +127,9 @@ func TestBTreeIterator2(t *testing.T) {
 	}
 }
 
-func TestBTreeIterator3(t *testing.T) {
-	bt := NewBTree()
+func TestBPlusTreeIterator3(t *testing.T) {
+	os.RemoveAll("/tmp/index-bptree")
+	bt := NewBPlusTree("/tmp", false)
 	{
 		// 插入多条数据，并测试seek(反向)
 		key1, key2 := []byte("2"), []byte("3")

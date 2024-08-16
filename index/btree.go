@@ -39,6 +39,9 @@ func (bt *BTree) Get(key []byte) *data.LogRecordPos {
 }
 
 func (bt *BTree) Put(key []byte, pos *data.LogRecordPos) bool {
+	if len(key) == 0 {
+		return false
+	}
 	it := &Item{key: key, pos: pos}
 	bt.lock.Lock()
 	bt.tree.ReplaceOrInsert(it)

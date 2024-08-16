@@ -13,8 +13,12 @@ type DBOptions struct {
 	DataFileSize int64
 	// 每次写入都持久化
 	AlwaysSync bool
+	// !AlwaysSync时，持久化的峰值
+	BytesSync int64
 	// index type
 	Indexer index.IndexType
+	// 首次加载时，是否使用mmap加载文件
+	MMapStartUp bool
 }
 
 // 默认DB配置
@@ -23,6 +27,8 @@ var DefaultDBOptions = DBOptions{
 	DataFileSize: 256 * 1024 * 1024,
 	AlwaysSync:   false,
 	Indexer:      index.BTreeType,
+	BytesSync:    0,
+	MMapStartUp:  true,
 }
 
 // 迭代器配置选项
@@ -45,6 +51,6 @@ type WBOptions struct {
 
 // 默认WriteBatch配置
 var DefaultWBOptions = WBOptions{
-	Sync: true,
+	Sync:        true,
 	MaxWriteNum: 100000,
 }

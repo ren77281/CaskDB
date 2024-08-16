@@ -1,24 +1,26 @@
 package data
 
 import (
+	"kv-go/fio"
 	"kv-go/utils"
 	"os"
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDataFileOpen(t *testing.T) {
-	df, err := OpenDataFile(os.TempDir(), 1)
+	df, err := OpenDataFile(os.TempDir(), 1, fio.FileIOType)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 
-	df1, err := OpenDataFile(os.TempDir(), 1)
+	df1, err := OpenDataFile(os.TempDir(), 1, fio.FileIOType)
 	assert.NotNil(t, df1)
 	assert.Nil(t, err)
 }
 
 func TestDataFileWrite(t *testing.T) {
-	df, err := OpenDataFile(os.TempDir(), 1)
+	df, err := OpenDataFile(os.TempDir(), 1, fio.FileIOType)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 
@@ -33,7 +35,7 @@ func TestDataFileWrite(t *testing.T) {
 }
 
 func TestDataFileCloseSync(t *testing.T) {
-	df, err := OpenDataFile(os.TempDir(), 1)
+	df, err := OpenDataFile(os.TempDir(), 1, fio.FileIOType)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 
@@ -54,7 +56,7 @@ func TestDataFileCloseSync(t *testing.T) {
 }
 
 func TestDataFileRead(t *testing.T) {
-	df, err := OpenDataFile("../tmp", 1)
+	df, err := OpenDataFile("../tmp", 1, fio.FileIOType)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 	var offset int64 = 0
@@ -81,7 +83,7 @@ func TestDataFileRead(t *testing.T) {
 	}
 
 	// 只有一条record
-	df, err = OpenDataFile("../tmp", 2)
+	df, err = OpenDataFile("../tmp", 2, fio.FileIOType)
 	assert.NotNil(t, df)
 	assert.Nil(t, err)
 	offset = 0
@@ -107,7 +109,7 @@ func TestDataFileRead(t *testing.T) {
 
 	{
 		// data中有多条record
-		df3, err3 := OpenDataFile("../tmp", 3)
+		df3, err3 := OpenDataFile("../tmp", 3, fio.FileIOType)
 		assert.NotNil(t, df3)
 		assert.Nil(t, err3)
 		sizes3 := make([]int64, 0)
@@ -140,7 +142,7 @@ func TestDataFileRead(t *testing.T) {
 		}
 	}
 	// data中有多条被删除的record
-	df4, err4 := OpenDataFile("../tmp", 4)
+	df4, err4 := OpenDataFile("../tmp", 4, fio.FileIOType)
 	assert.NotNil(t, df4)
 	assert.Nil(t, err4)
 	sizes4 := make([]int64, 0)

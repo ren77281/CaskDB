@@ -1,7 +1,6 @@
 package index
 
 import (
-	"bytes"
 	"kv-go/data"
 	"path/filepath"
 
@@ -44,6 +43,10 @@ func NewBPlusTree(dirPath string, isSync bool) *BPlusTree {
 
 // 插入key-LogRecordPos
 func (bp *BPlusTree) Put(key []byte, pos *data.LogRecordPos) bool {
+	// 不允许插入空的key
+	if len(key) == 0 {
+		return false
+	}
 	if err := bp.tree.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bucketName)
 		if bucket == nil {
@@ -145,10 +148,8 @@ func (it *BPlusTreeIterator) Rewind() {
 // 找到key值满足大于等于/小于等于关系的位置，开始迭代
 func (it *BPlusTreeIterator) Seek(key []byte) {
 	it.key, it.val = it.cursor.Seek(key)
-	if it.reverse && it.key != nil {
-		if !bytes.Equal(it.key, key) {
-			it.key, it.val = it.cursor.Prev()
-		}
+	if it.reverse && len(it.key) == 0 {
+		it.key, it.val = it.cursor.Last()
 	}
 }
 
