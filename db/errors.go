@@ -18,5 +18,7 @@ var (
 	ErrInvalidRecordType     = errors.New("invalid record type exists")
 	ErrDBMerging             = errors.New("db is merging")
 	ErrDBUsing               = errors.New("db is using")
-	errTest = errors.New("test")
+	ErrInvalidMergeRatio     = errors.New("merge ratio must be in ther range [0, 1]")
+	ErrMergeRatioUnreached   = errors.New("merge ratio unreach")
+	ErrDiskSpaceNotEnough    = errors.New("disk space not enough")
 )

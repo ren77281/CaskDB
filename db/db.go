@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 	"kv-go/data"
-	"kv-go/index"
 	"kv-go/fio"
+	"kv-go/index"
+	"kv-go/utils"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,7 +33,32 @@ type DB struct {
 	wbIdFileExists bool                      // wbIdFile是否存在
 	isInitial      bool                      // 是否第一次初始化数据目录
 	fileLock       *flock.Flock              // 用于保持进程互斥的文件锁
-	writeBytes     int64                     // 为持久化的字节数
+	writeBytes     int64                     // 未持久化的字节数
+	invalidSize    int64                     // 更新导致的无效数据
+}
+
+type DBStat struct {
+	KeyNum      int64 // key的数量
+	DataFileNum int64 // 使用的数据文件数量
+	InvalidSize int64 // 无效数据量(Byte)
+	DiskSize    int64 // 占用磁盘的空间(Byte)
+}
+
+func (db *DB) Stat() (*DBStat, error) {
+	dataFileNum := len(db.inActivaFile)
+	if db.activeFile != nil {
+		dataFileNum++
+	}
+	diskSize, err := utils.DirSize(db.opts.DirPath)
+	if err != nil {
+		return nil, err
+	}
+	return &DBStat{
+		KeyNum: int64(db.index.Size()),
+		DataFileNum: int64(dataFileNum),
+		InvalidSize: db.invalidSize,
+		DiskSize: diskSize,
+	}, nil
 }
 
 // 打开/创建数据库实例
@@ -175,8 +201,13 @@ func (db *DB) Put(key []byte, value []byte) error {
 		return err
 	}
 	// 根据记录的位置信息 logRecordLog 维护索引
-	if !db.index.Put(key, logRecordLog) {
+	ok, oldPos := db.index.Put(key, logRecordLog)
+	if !ok {
 		return ErrUpdateIndexFailed
+	}
+	if oldPos != nil {
+		// 统计无效字节数
+		db.invalidSize += int64(oldPos.RecordSize)
 	}
 	return nil
 }
@@ -285,15 +316,21 @@ func (db *DB) Delete(key []byte) error {
 	}
 	// 构造墓碑值
 	logRecord := &data.LogRecord{Key: serializeKeyId(key, zeroWbId), Typ: data.LogRecordDeleted}
-	_, err := db.appendLogRecord(logRecord)
+	pos, err := db.appendLogRecord(logRecord)
 	if err != nil {
 		return err
 	}
+	// delete时，追加的record也是无效的
+	db.invalidSize += int64(pos.RecordSize)
 	// 维护index, 这里应该是成功删除，因为之前Get key成功了
 	// TODO: 抛异常
-	ok := db.index.Delete(key)
+	ok, oldPos := db.index.Delete(key)
 	if !ok {
 		return ErrUpdateIndexFailed
+	}
+	if oldPos != nil {
+		// 统计无效字节数
+		db.invalidSize += int64(oldPos.RecordSize)
 	}
 	return nil
 }
@@ -337,21 +374,22 @@ func (db *DB) appendLogRecord(logRecord *data.LogRecord) (*data.LogRecordPos, er
 		if err := db.activeFile.Sync(); err != nil {
 			return nil, err
 		}
-	} else if !db.opts.AlwaysSync {
+	} else {
+		// 统计未持久化的字节数
 		db.writeBytes += sz
 		if db.opts.BytesSync > 0 && db.writeBytes >= db.opts.BytesSync {
-			// 如果满足持久化阈值就持久化，并重置未持久化的字节数
+			// 如果达到持久化阈值就持久化，并重置未持久化的字节数
 			db.writeBytes = 0
 			if err := db.activeFile.Sync(); err != nil {
 				return nil, err
 			}
-			return nil, errTest
 		}
 	}
 	// 构造记录的位置信息LogRecordPos
 	return &data.LogRecordPos{
-		Fid:    db.activeFile.FileId,
-		Offset: writeOff,
+		Fid:        db.activeFile.FileId,
+		Offset:     writeOff,
+		RecordSize: uint32(sz),
 	}, nil
 }
 
@@ -496,8 +534,9 @@ func (db *DB) loadIndexFromDataFile(fileIds []int) error {
 			}
 			// 构造logRecordPos
 			logRecordPos := &data.LogRecordPos{
-				Fid:    uint32(fileId),
-				Offset: offset,
+				Fid:        uint32(fileId),
+				Offset:     offset,
+				RecordSize: uint32(sz),
 			}
 			// 解析key获取wbId
 			realKey, wbId := parseKeyId(logRecord.Key)
@@ -552,6 +591,9 @@ func (db *DB) loadWbIdFile() error {
 		return err
 	}
 	id, err := strconv.ParseUint(string(logRecord.Value), 10, 64)
+	if err != nil {
+		return err
+	}
 	db.wbId = id
 	db.wbIdFileExists = true
 	// TODO!!! 这里删除wbIdFile是否有必要？
@@ -574,8 +616,12 @@ func (db *DB) NewWriteBatch(opts WBOptions) *WriteBatch {
 func checkOptions(opts DBOptions) error {
 	if opts.DataFileSize <= 0 {
 		return ErrInvalidDataFileSize
-	} else if len(opts.DirPath) == 0 {
+	}
+	if len(opts.DirPath) == 0 {
 		return ErrInvalidDirPath
+	}
+	if opts.MergeRatio < 0 || opts.MergeRatio > 1 {
+		return ErrInvalidMergeRatio
 	}
 	return nil
 }

@@ -19,6 +19,8 @@ type DBOptions struct {
 	Indexer index.IndexType
 	// 首次加载时，是否使用mmap加载文件
 	MMapStartUp bool
+	// 失效数据达到一定比率后触发merge
+	MergeRatio float32
 }
 
 // 默认DB配置
@@ -29,6 +31,7 @@ var DefaultDBOptions = DBOptions{
 	Indexer:      index.BTreeType,
 	BytesSync:    0,
 	MMapStartUp:  true,
+	MergeRatio:   0.5,
 }
 
 // 迭代器配置选项

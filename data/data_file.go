@@ -6,6 +6,7 @@ import (
 	"hash/crc32"
 	"io"
 	"kv-go/fio"
+	"os"
 	"path/filepath"
 )
 
@@ -43,7 +44,9 @@ func newDataFile(fileName string, fileId uint32, ioType fio.IOType) (*DataFile, 
 // TODO:这些函数调用关系似乎有点乱, dirPath与filename的拼接...
 
 func OpenWriteBatchFile(dirPath string) (*DataFile, error) {
+	// 先删除已经存在的wb文件
 	fileName := filepath.Join(dirPath, NextWriteBatchIdFileName)
+	os.RemoveAll(fileName)
 	return newDataFile(fileName, 0, fio.FileIOType)
 }
 

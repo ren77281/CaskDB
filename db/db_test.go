@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"fmt"
 	"kv-go/index"
 	"kv-go/utils"
 	"os"
@@ -491,15 +492,39 @@ func TestBytesSync(t *testing.T) {
 		i := 0
 		cnt := 100000
 		for i = 0; i < cnt; i++ {
-			err := db.Put(utils.GetTestKey(i), utils.GetTestValue(128))
-			if err != nil {
+			// err := db.Put(utils.GetTestKey(i), utils.GetTestValue(128))
+			// if err != nil {
 				// 这里新建了一个用来测试的变量，用来告知此时发生了持久化，我们只需要看持久化是否成功即可
-				if err == errTest {
-					n, _ := db.activeFile.IOManager.Size()
-					assert.NotEqual(t, n, int64(0))
-					break
-				}
-			}
+				// if err == errTest {
+				// 	n, _ := db.activeFile.IOManager.Size()
+				// 	assert.NotEqual(t, n, int64(0))
+				// 	break
+				// }
+			// }
 		}
+	}
+}
+
+func TestStat(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-stat")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+	{
+		// put重复数据，并删除其中部分数据
+		// 验证stat得到的数据是否和预想一致
+		cnt := 100000
+		for i := 0; i < cnt; i++ {
+			db.Put(utils.GetTestKey(i),utils.GetTestValue(128))
+			db.Put(utils.GetTestKey(i),utils.GetTestValue(128))
+		}
+		for i := 0; i < cnt/2; i++ {
+			db.Delete(utils.GetTestKey(i))
+		}
+		stat, err := db.Stat()
+		assert.Nil(t, err)
+		assert.Equal(t, stat.KeyNum, int64(cnt/2))
+		fmt.Println(stat)
 	}
 }

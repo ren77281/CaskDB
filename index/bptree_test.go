@@ -10,26 +10,26 @@ import (
 
 func TestBPlusTreePut(t *testing.T) {
 	bt := NewBPlusTree("/tmp", false)
-	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
+	res1, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
 
-	res2 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
+	res2, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
 	assert.True(t, res2)
 
-	res3 := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
+	res3, _ := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
 	assert.False(t, res3)
 }
 
 func TestBPlusTreeGet(t *testing.T) {
 	bt := NewBPlusTree("/tmp", false)
 
-	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
+	res1, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
 
-	res2 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
+	res2, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
 	assert.True(t, res2)
 
-	res3 := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
+	res3, _ := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
 	assert.False(t, res3)
 
 	res4 := bt.Get([]byte("a"))
@@ -44,19 +44,19 @@ func TestBPlusTreeGet(t *testing.T) {
 func TestBPlusTreeDelete(t *testing.T) {
 	bt := NewBPlusTree("/tmp", false)
 
-	res1 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
+	res1, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	assert.True(t, res1)
 
-	res2 := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
+	res2, _ := bt.Put([]byte("a"), &data.LogRecordPos{Fid: 1, Offset: 2})
 	assert.True(t, res2)
 
-	res3 := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
+	res3, _ := bt.Put(nil, &data.LogRecordPos{Fid: 2, Offset: 2})
 	assert.False(t, res3)
 
-	res4 := bt.Delete([]byte("a"))
+	res4, _ := bt.Delete([]byte("a"))
 	assert.True(t, res4)
 
-	res5 := bt.Delete([]byte("b"))
+	res5, _ := bt.Delete([]byte("b"))
 	assert.False(t, res5)
 	
 	res6 := bt.Get([]byte("a"))

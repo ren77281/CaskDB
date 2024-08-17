@@ -28,14 +28,17 @@ func NewARTree() *ARTree {
 }
 
 // 插入key-LogRecordPos
-func (art *ARTree) Put(key []byte, pos *data.LogRecordPos) bool {
+func (art *ARTree) Put(key []byte, pos *data.LogRecordPos) (bool, *data.LogRecordPos) {
 	if len(key) == 0 {
-		return false
+		return false, nil
 	}
 	art.lock.Lock()
-	defer art.lock.Unlock()
-	art.tree.Insert(key, pos)
-	return true
+	oldValue, updated := art.tree.Insert(key, pos)
+	art.lock.Unlock()
+	if updated {
+		return true, oldValue.(*data.LogRecordPos)
+	}
+	return true, nil
 }
 
 // 根据key获取LogRecordPos
@@ -49,11 +52,14 @@ func (art *ARTree) Get(key []byte) *data.LogRecordPos {
 }
 
 // 删除key-LogRecordPos
-func (art *ARTree) Delete(key []byte) bool {
+func (art *ARTree) Delete(key []byte) (bool, *data.LogRecordPos) {
 	art.lock.Lock()
-	defer art.lock.Unlock()
-	_, ok := art.tree.Delete(key)
-	return ok
+	oldValue, deleted := art.tree.Delete(key)
+	art.lock.Unlock()
+	if deleted {
+		return true, oldValue.(*data.LogRecordPos)
+	}
+	return false, nil
 }
 
 func (art *ARTree) Size() int {

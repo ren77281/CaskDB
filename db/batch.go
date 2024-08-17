@@ -19,7 +19,6 @@ type WriteBatch struct {
 	db            *DB                        // 保存DB实例
 	pendingWrites map[string]*data.LogRecord // 暂存事务的写入操作
 	mu            *sync.Mutex                // 保证WriteBatch操作的原子性，用户可能用多个线程访问WriteBatch
-
 }
 
 // 写入数据到暂存区
@@ -117,12 +116,21 @@ func (writeBatch *WriteBatch) Commit() error {
 			return err
 		}
 	}
-	// 所有record写入磁盘后，更新索引，TODO:[]byte->string的转换开销下，但顶不住频繁的转换
+	// 所有record写入磁盘后，更新索引，TODO:[]byte->string的转换开销小，但顶不住频繁的转换
+	// 记得维护无效字节数
 	for key, pos := range updatePos {
-		writeBatch.db.index.Put([]byte(key), pos)
+		ok, oldValue := writeBatch.db.index.Put([]byte(key), pos)
+		if !ok {
+			return ErrUpdateIndexFailed
+		}
+		writeBatch.db.invalidSize += int64(oldValue.RecordSize)
 	}
 	for key := range deletePos {
-		writeBatch.db.index.Delete([]byte(key))
+		ok, oldValue := writeBatch.db.index.Delete([]byte(key))
+		if !ok {
+			return ErrUpdateIndexFailed
+		}
+		writeBatch.db.invalidSize += int64(oldValue.RecordSize)
 	}
 	// 清空wb中暂存的record
 	writeBatch.pendingWrites = make(map[string]*data.LogRecord)

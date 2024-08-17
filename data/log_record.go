@@ -38,8 +38,9 @@ type LogRecordHeader struct {
 
 // LogRecordPos 描述记录在磁盘中的具体位置
 type LogRecordPos struct {
-	Fid    uint32 // Fid 唯一标识文件
-	Offset int64  // Offset 记录在文件中的偏移量
+	Fid        uint32 // Fid 唯一标识文件
+	Offset     int64  // Offset 记录在文件中的偏移量
+	RecordSize uint32 // record占用磁盘的字节数量
 }
 
 // 存储WriteBatch的record信息
@@ -51,10 +52,11 @@ type WBLogRecord struct {
 
 // encodeRecordPos 将LogRecordPos序列化成[]byte
 func EncodeLogRecordPos(logRecordPos *LogRecordPos) []byte {
-	encLogRecordPos := make([]byte, binary.MaxVarintLen32+binary.MaxVarintLen64)
+	encLogRecordPos := make([]byte, 2*binary.MaxVarintLen32+binary.MaxVarintLen64)
 	var idx = 0
 	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.Fid))
 	idx += binary.PutVarint(encLogRecordPos[idx:], logRecordPos.Offset)
+	idx += binary.PutUvarint(encLogRecordPos[idx:], uint64(logRecordPos.RecordSize))
 	return encLogRecordPos[:idx]
 }
 
@@ -62,10 +64,13 @@ func DecodeLogRecordPos(datas []byte) *LogRecordPos {
 	var idx = 0
 	fid, n := binary.Uvarint(datas[idx:])
 	idx += n
-	offset, _ := binary.Varint(datas[idx:])
+	offset, n := binary.Varint(datas[idx:])
+	idx += n
+	recordSize, _ := binary.Uvarint(datas[idx:])
 	return &LogRecordPos{
 		Fid:    uint32(fid),
 		Offset: offset,
+		RecordSize: uint32(recordSize),
 	}
 }
 

@@ -22,11 +22,11 @@ type Item struct {
 // 索引特征
 type Indexer interface {
 	// 插入key-LogRecordPos
-	Put(key []byte, pos *data.LogRecordPos) bool
+	Put(key []byte, pos *data.LogRecordPos) (bool, *data.LogRecordPos)
 	// 根据key获取LogRecordPos
 	Get(key []byte) *data.LogRecordPos
 	// 删除key-LogRecordPos
-	Delete(key []byte) bool
+	Delete(key []byte) (bool, *data.LogRecordPos)
 	// 创建索引上的迭代器
 	NewIterator(reverse bool) Iterator
 	// 索引中的数据数量

@@ -42,22 +42,26 @@ func NewBPlusTree(dirPath string, isSync bool) *BPlusTree {
 }
 
 // 插入key-LogRecordPos
-func (bp *BPlusTree) Put(key []byte, pos *data.LogRecordPos) bool {
+func (bp *BPlusTree) Put(key []byte, pos *data.LogRecordPos) (bool, *data.LogRecordPos) {
 	// 不允许插入空的key
 	if len(key) == 0 {
-		return false
+		return false, nil
 	}
+	var oldValue []byte = nil
 	if err := bp.tree.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bucketName)
 		if bucket == nil {
 			return bbolt.ErrBucketNotFound
 		}
-		bucket.Put(key, data.EncodeLogRecordPos(pos))
-		return nil
+		oldValue = bucket.Get(key)
+		return bucket.Put(key, data.EncodeLogRecordPos(pos))
 	}); err != nil {
-		return false
+		return false, nil
 	}
-	return true
+	if len(oldValue) != 0 {
+		return true, data.DecodeLogRecordPos(oldValue)
+	}
+	return true, nil
 }
 
 // 根据key获取LogRecordPos
@@ -80,22 +84,24 @@ func (bp *BPlusTree) Get(key []byte) *data.LogRecordPos {
 }
 
 // 删除key-LogRecordPos
-func (bp *BPlusTree) Delete(key []byte) bool {
-	var ok bool = false
+func (bp *BPlusTree) Delete(key []byte) (bool, *data.LogRecordPos) {
+	var oldValue []byte = nil
 	if err := bp.tree.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(bucketName)
 		if bucket == nil {
 			return bbolt.ErrBucketNotFound
 		}
-		if val := bucket.Get(key); len(val) != 0 {
-			ok = true
+		if oldValue := bucket.Get(key); len(oldValue) != 0 {
 			return bucket.Delete(key)
 		}
 		return nil
 	}); err != nil {
-		return false
+		return false, nil
 	}
-	return ok
+	if len(oldValue) != 0 {
+		return true, data.DecodeLogRecordPos(oldValue)
+	}
+	return false, nil
 }
 
 func (bp *BPlusTree) Size() int {

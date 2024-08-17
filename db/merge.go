@@ -3,6 +3,7 @@ package db
 import (
 	"io"
 	"kv-go/data"
+	"kv-go/utils"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,6 +16,7 @@ const (
 	mergeFinishedKey = "finish"
 )
 
+// TODO!!!合并后db的无效数据量应该减小！
 func (db *DB) merge() error {
 	if db.activeFile == nil {
 		return nil
@@ -30,6 +32,27 @@ func (db *DB) merge() error {
 	defer func() {
 		db.isMerge = false
 	}()
+	// 检查是否达到merge条件，先获取数据目录的大小
+	dirSize, err := utils.DirSize(db.opts.DirPath)
+	if err != nil {
+		db.mu.Unlock()
+		return err
+	}
+	// 判断比例是否达到阈值
+	if float32(db.invalidSize) / float32(dirSize) < db.opts.MergeRatio {
+		db.mu.Unlock()
+		return ErrMergeRatioUnreached
+	}
+	// 再查看剩余空间是否足够能用来重写
+	avaliableDiskSize, err := utils.AvailableDiskSize()
+	if err != nil {
+		db.mu.Unlock()
+		return err
+	}
+	if avaliableDiskSize <= dirSize - db.invalidSize {
+		db.mu.Unlock()
+		return ErrDiskSpaceNotEnough
+	}
 	// 将当前活跃文件关闭，保存为不活跃文件
 	// 先持久化并保存该文件
 	if err := db.activeFile.Sync(); err != nil {
@@ -177,7 +200,7 @@ func (db *DB) loadMergeFiles() error {
 		if fileName == data.MergeFilishedFileName {
 			finished = true
 		}
-		if fileName == data.NextWriteBatchIdFileName {
+		if fileName == data.NextWriteBatchIdFileName || fileName == fileLockName{
 			continue
 		}
 		fileNames = append(fileNames, fileName)
@@ -256,7 +279,7 @@ func (db *DB) loadIndexFromHintFile() error {
 		}
 		off += sz
 		logRecordPos := data.DecodeLogRecordPos(logRecord.Value)
-		if ok := db.index.Put(logRecord.Key, logRecordPos); !ok {
+		if ok, _ := db.index.Put(logRecord.Key, logRecordPos); !ok {
 			return ErrUpdateIndexFailed
 		}
 	}
