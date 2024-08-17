@@ -528,3 +528,20 @@ func TestStat(t *testing.T) {
 		fmt.Println(stat)
 	}
 }
+
+func TestBackUp(t *testing.T) {
+	opts := DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "KeyCache-test-stat")
+	db, err := Open(opts)
+	defer destoryDB(db)
+	assert.Nil(t, err)
+	dest := "/home/kv-go/tmp"
+	{
+		// 插入多个数据后，再备份
+		for i := 0; i < 3000000; i++ {
+			db.Put(utils.GetTestKey(i), utils.GetTestValue(128))
+		}
+		err := db.BackUp(dest)
+		assert.Nil(t, err)
+	}
+}

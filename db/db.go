@@ -61,6 +61,14 @@ func (db *DB) Stat() (*DBStat, error) {
 	}, nil
 }
 
+func (db *DB) BackUp(dir string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	exclude := map[string]struct{}{}
+	exclude[fileLockName] = struct{}{}
+	return utils.CopyDir(db.opts.DirPath, dir, exclude)
+}
+
 // 打开/创建数据库实例
 func Open(opts DBOptions) (*DB, error) {
 	// 检查用户的配置
