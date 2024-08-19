@@ -55,5 +55,5 @@ type WBOptions struct {
 // 默认WriteBatch配置
 var DefaultWBOptions = WBOptions{
 	Sync:        true,
-	MaxWriteNum: 100000,
+	MaxWriteNum: 1000000,
 }

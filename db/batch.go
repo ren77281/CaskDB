@@ -47,6 +47,7 @@ func (writeBatch *WriteBatch) Delete(key []byte) error {
 	}
 	// 先判断key是否存在
 	logRecordPos := writeBatch.db.index.Get(key)
+	// 如果key不存在
 	if logRecordPos == nil {
 		delete(writeBatch.pendingWrites, string(key))
 		return nil
@@ -123,14 +124,18 @@ func (writeBatch *WriteBatch) Commit() error {
 		if !ok {
 			return ErrUpdateIndexFailed
 		}
-		writeBatch.db.invalidSize += int64(oldValue.RecordSize)
+		if oldValue != nil {
+			writeBatch.db.invalidSize += int64(oldValue.RecordSize)
+		}
 	}
 	for key := range deletePos {
 		ok, oldValue := writeBatch.db.index.Delete([]byte(key))
 		if !ok {
 			return ErrUpdateIndexFailed
 		}
-		writeBatch.db.invalidSize += int64(oldValue.RecordSize)
+		if oldValue != nil {
+			writeBatch.db.invalidSize += int64(oldValue.RecordSize)
+		}
 	}
 	// 清空wb中暂存的record
 	writeBatch.pendingWrites = make(map[string]*data.LogRecord)
