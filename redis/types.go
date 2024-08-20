@@ -427,11 +427,11 @@ func (rds *RedisDataStructure) push(key []byte, field []byte, head bool) (uint32
 	return uint32(meta.tail-meta.head), nil
 }
 
-func (rds *RedisDataStructure) LPop(key []byte, field []byte) ([]byte, error) {
+func (rds *RedisDataStructure) LPop(key []byte) ([]byte, error) {
 	return rds.pop(key, true)
 }
 
-func (rds *RedisDataStructure) RPop(key []byte, field []byte) ([]byte, error) {
+func (rds *RedisDataStructure) RPop(key []byte) ([]byte, error) {
 	return rds.pop(key, false)
 }
 

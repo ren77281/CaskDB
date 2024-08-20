@@ -41,7 +41,7 @@ func (rds *RedisDataStructure) getOrCreateMetaData(key []byte, dataType RedisDat
 			return nil, ErrEmptyMetaData
 		}
 		// 存在则检查过期时间，与数据类型
-		meta := decodeMeta(encMetaData)
+		meta = decodeMeta(encMetaData)
 		if meta.dataType != dataType {
 			return nil, ErrWrongTypeOperation
 		}

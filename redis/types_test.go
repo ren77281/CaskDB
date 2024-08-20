@@ -350,3 +350,69 @@ func TestSet3(t *testing.T) {
 		}
 	}
 }
+
+func TestList1(t *testing.T) {
+	opts := bitcask.DefaultDBOptions
+	opts.DirPath, _ = os.MkdirTemp("", "redis-list111")
+	db, err := bitcask.Open(opts)
+	assert.Nil(t, err)
+	rds := &RedisDataStructure{
+		db: db,
+	}
+	{
+		// 没有数据时，pop
+		val, err := rds.LPop(utils.GetTestKey(1))
+		assert.NotNil(t, err)
+		assert.Nil(t, val)
+		val, err = rds.RPop(utils.GetTestKey(1))
+		assert.NotNil(t, err)
+		assert.Nil(t, val)
+		// 向一个key，push多条数据，验证数量是否正确
+		cnt := 1000
+		keyNum := 1
+		for i := 0; i < cnt; i++ {
+			sz, err := rds.LPush(utils.GetTestKey(keyNum), utils.GetTestKey(i))
+			assert.Nil(t, err)
+			assert.Equal(t, sz, uint32(i+1))
+		}
+		for i := 0; i < cnt; i++ {
+			sz, err := rds.RPush(utils.GetTestKey(keyNum), utils.GetTestKey(i))
+			assert.Nil(t, err)
+			assert.Equal(t, sz, uint32(cnt+i+1))
+		}
+		// 再删除验证数据是否正确
+		for i := cnt-1; i >= 0; i-- {
+			val, err := rds.LPop(utils.GetTestKey(keyNum))
+			assert.Nil(t, err)
+			assert.Equal(t, val, utils.GetTestKey(i))
+		}
+		for i := cnt-1; i >= 0; i-- {
+			val, err := rds.RPop(utils.GetTestKey(keyNum))
+			assert.Nil(t, err)
+			assert.Equal(t, val, utils.GetTestKey(i))
+		}
+		// 再向一个key，push多条数据，验证数量是否正确
+		keyNum = 5
+		for i := 0; i < cnt; i++ {
+			sz, err := rds.LPush(utils.GetTestKey(keyNum), utils.GetTestKey(i))
+			assert.Nil(t, err)
+			assert.Equal(t, sz, uint32(i+1))
+		}
+		for i := 0; i < cnt; i++ {
+			sz, err := rds.RPush(utils.GetTestKey(keyNum), utils.GetTestKey(i))
+			assert.Nil(t, err)
+			assert.Equal(t, sz, uint32(cnt+i+1))
+		}
+		// 再删除验证数据是否正确
+		for i := cnt-1; i >= 0; i-- {
+			val, err := rds.LPop(utils.GetTestKey(keyNum))
+			assert.Nil(t, err)
+			assert.Equal(t, val, utils.GetTestKey(i))
+		}
+		for i := cnt-1; i >= 0; i-- {
+			val, err := rds.RPop(utils.GetTestKey(keyNum))
+			assert.Nil(t, err)
+			assert.Equal(t, val, utils.GetTestKey(i))
+		}
+	}
+}

@@ -29,7 +29,7 @@ func main() {
 	}
 	bitcaskServer.dbs[0] = rds
 	// 创建redis服务端(使用redcon框架)
-	bitcaskServer.server = redcon.NewServer(addr, execClientCommand, bitcaskServer.accpet, bitcaskServer.close)
+	bitcaskServer.server = redcon.NewServer(addr, execClientCommand, bitcaskServer.accept, bitcaskServer.close)
 	bitcaskServer.listen()
 }
 
@@ -48,7 +48,7 @@ func (svr *BitcaskServer) accept(conn redcon.Conn) bool {
 	return true
 }
 
-func (svr *BitcaskServer) close(conn redcon.Conn) {
+func (svr *BitcaskServer) close(conn redcon.Conn, _ error) {
 	for _, db := range svr.dbs {
 		_ = db.Close()
 	}
