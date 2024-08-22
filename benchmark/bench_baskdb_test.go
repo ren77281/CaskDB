@@ -13,9 +13,8 @@ import (
 var (
 	baskDB      *bitcask.DB
 	rander      *rand.Rand
-	valLen      = 128
+	valLen      = 512
 	largeValLen = 1024 * 1024
-	dataNum     = 100000
 )
 
 func init() {
