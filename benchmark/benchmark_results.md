@@ -16,28 +16,32 @@ goos: linux
 goarch: 386
 pkg: kv-go/benchmark
 cpu: Intel(R) Xeon(R) CPU E5-2683 v4 @ 2.10GHz
-BenchmarkAll/BaskDB/PutValue               10000             21809 ns/op            2365 B/op         10 allocs/op
-BenchmarkAll/BaskDB/GetValue               10000              1807 ns/op              68 B/op          4 allocs/op
-BenchmarkAll/BaskDB/PutLargeValue          10000            129617 ns/op           18822 B/op         10 allocs/op
-BenchmarkAll/BaskDB/GetLargeValue          10000              2038 ns/op              68 B/op          4 allocs/op
-BenchmarkAll/Badger/PutValue               10000             44239 ns/op            2699 B/op         44 allocs/op
-BenchmarkAll/Badger/GetValue               10000              6898 ns/op             332 B/op         11 allocs/op
-BenchmarkAll/Badger/PutLargeValue          10000            191427 ns/op           14881 B/op         45 allocs/op
-BenchmarkAll/Badger/GetLargeValue          10000              9458 ns/op             332 B/op         10 allocs/op
-BenchmarkAll/BoltDB/PutValue               10000             83863 ns/op           13687 B/op         99 allocs/op
-BenchmarkAll/BoltDB/GetValue               10000              4432 ns/op             533 B/op         22 allocs/op
-BenchmarkAll/BoltDB/PutLargeValue          10000            237062 ns/op           46080 B/op        107 allocs/op
-BenchmarkAll/BoltDB/GetLargeValue          10000              4871 ns/op             529 B/op         22 allocs/op
-BenchmarkAll/GoLevelDB/PutValue            10000             26000 ns/op            2297 B/op          9 allocs/op
-BenchmarkAll/GoLevelDB/GetValue            10000              8703 ns/op            1525 B/op         15 allocs/op
-BenchmarkAll/GoLevelDB/PutLargeValue       10000            236618 ns/op           15170 B/op         12 allocs/op
-BenchmarkAll/GoLevelDB/GetLargeValue       10000            108503 ns/op           14466 B/op         44 allocs/op
-BenchmarkAll/RoseDB/PutValue               10000             26686 ns/op            2069 B/op         14 allocs/op
-BenchmarkAll/RoseDB/GetValue               10000              2292 ns/op              68 B/op          4 allocs/op
-BenchmarkAll/RoseDB/PutLargeValue          10000            144968 ns/op           14239 B/op         14 allocs/op
-BenchmarkAll/RoseDB/GetLargeValue          10000              2987 ns/op              68 B/op          4 allocs/op
+BenchmarkAll/BaskDB/PutValue               10000             22322 ns/op            2366 B/op         10 allocs/op
+BenchmarkAll/BaskDB/GetValue               10000              1797 ns/op              68 B/op          4 allocs/op
+BenchmarkAll/BaskDB/PutLargeValue          10000            141831 ns/op           18821 B/op         10 allocs/op
+BenchmarkAll/BaskDB/GetLargeValue          10000              1704 ns/op              68 B/op          4 allocs/op
+BenchmarkAll/Badger/PutValue               10000             36982 ns/op            2698 B/op         44 allocs/op
+BenchmarkAll/Badger/GetValue               10000              5423 ns/op             332 B/op         10 allocs/op
+BenchmarkAll/Badger/PutLargeValue          10000            166108 ns/op           14878 B/op         45 allocs/op
+BenchmarkAll/Badger/GetLargeValue          10000              6784 ns/op             332 B/op         11 allocs/op
+BenchmarkAll/BoltDB/PutValue               10000             78604 ns/op           13686 B/op         99 allocs/op
+BenchmarkAll/BoltDB/GetValue               10000              4232 ns/op             533 B/op         22 allocs/op
+BenchmarkAll/BoltDB/PutLargeValue          10000            237312 ns/op           46834 B/op        107 allocs/op
+BenchmarkAll/BoltDB/GetLargeValue          10000              5611 ns/op             526 B/op         21 allocs/op
+BenchmarkAll/GoLevelDB/PutValue            10000             35526 ns/op            2297 B/op          9 allocs/op
+BenchmarkAll/GoLevelDB/GetValue            10000              9127 ns/op            1523 B/op         15 allocs/op
+BenchmarkAll/GoLevelDB/PutLargeValue       10000            232223 ns/op           15178 B/op         12 allocs/op
+BenchmarkAll/GoLevelDB/GetLargeValue       10000            105240 ns/op           13799 B/op         43 allocs/op
+BenchmarkAll/RoseDB/PutValue               10000             33861 ns/op            2069 B/op         14 allocs/op
+BenchmarkAll/RoseDB/GetValue               10000              2991 ns/op              68 B/op          4 allocs/op
+BenchmarkAll/RoseDB/PutLargeValue          10000            138470 ns/op           14239 B/op         14 allocs/op
+BenchmarkAll/RoseDB/GetLargeValue          10000              3766 ns/op              68 B/op          4 allocs/op
+BenchmarkAll/Redis/PutValue                10000            185856 ns/op            1884 B/op         15 allocs/op
+BenchmarkAll/Redis/GetValue                10000            129911 ns/op             163 B/op         10 allocs/op
+BenchmarkAll/Redis/PutLargeValue           10000            311454 ns/op           14055 B/op         15 allocs/op
+BenchmarkAll/Redis/GetLargeValue           10000            104030 ns/op             161 B/op         10 allocs/op
 PASS
-ok      kv-go/benchmark 13.543s
+ok      kv-go/benchmark 20.859s
 ```
 
 ```bash
