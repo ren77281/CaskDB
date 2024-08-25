@@ -14,7 +14,7 @@ var (
 	baskDB      *bitcask.DB
 	rander      *rand.Rand
 	valLen      = 512
-	largeValLen = 1024 * 1024
+	largeValLen = 4 * 1024
 )
 
 func init() {
@@ -57,6 +57,12 @@ func BenchmarkAll(b *testing.B) {
     b.Run("RoseDB/GetValue", Benchmark_GetValue_RoseDB)
     b.Run("RoseDB/PutLargeValue", Benchmark_PutLargeValue_RoseDB)
     b.Run("RoseDB/GetLargeValue", Benchmark_GetLargeValue_RoseDB)
+
+    // 最后运行 Redis 的基准测试
+    b.Run("Redis/PutValue", Benchmark_PutValue_Redis)
+    b.Run("Redis/GetValue", Benchmark_GetValue_Redis)
+    b.Run("Redis/PutLargeValue", Benchmark_PutLargeValue_Redis)
+    b.Run("Redis/GetLargeValue", Benchmark_GetLargeValue_Redis)
 }
 
 // func initBaskDBData(n int) {
