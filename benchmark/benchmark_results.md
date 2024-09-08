@@ -5,6 +5,8 @@
 - [nutsdb](https://github.com/nutsdb/nutsdb)
 - [goleveldb](https://github.com/syndtr/goleveldb)
 - [rosedb](https://github.com/rosedblabs/rosedb)
+- [redis](https://github.com/redis/redis)
+
 ## Options
 - key size:         14 byte
 - value size:       512 byte
