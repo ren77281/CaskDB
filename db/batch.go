@@ -3,7 +3,6 @@ package db
 import (
 	"encoding/binary"
 	"sync"
-	"sync/atomic"
 
 	"kv-go/data"
 )
@@ -20,6 +19,7 @@ type WriteBatch struct {
 	db            *DB                        // 保存DB实例
 	pendingWrites map[string]*data.LogRecord // 暂存事务的写入操作
 	mu            *sync.Mutex                // 保证WriteBatch操作的原子性，用户可能用多个线程访问WriteBatch
+	txId          uint64                     // 版本号
 }
 
 // 写入数据到暂存区
@@ -77,7 +77,6 @@ func (writeBatch *WriteBatch) Commit() error {
 	writeBatch.db.mu.Lock()
 	defer writeBatch.db.mu.Unlock()
 	// 获取wbId
-	id := atomic.AddUint64(&writeBatch.db.wbId, 1)
 	// TODO:如果先大量更新，然后再全部删除，那么维护index时，也先更新再删除，是否是无效操作？
 	// 还是说这里的两个map不够优雅？
 	updatePos := make(map[string]*data.LogRecordPos)
@@ -86,9 +85,10 @@ func (writeBatch *WriteBatch) Commit() error {
 	for _, record := range writeBatch.pendingWrites {
 		realKey := record.Key
 		// 磁盘中的key需要带有id
-		record.Key = serializeKeyId(realKey, id)
+		record.Key = serializeKeyId(realKey, writeBatch.txId)
 		// 向磁盘中的data file追加数据
 		logRecordPos, err := writeBatch.db.appendLogRecord(record)
+		logRecordPos.TxId = writeBatch.txId
 		if err != nil {
 			return err
 		}
@@ -103,23 +103,29 @@ func (writeBatch *WriteBatch) Commit() error {
 			return ErrInvalidRecordType
 		}
 	}
-	// 最后写入一条finish record
-	finLogRecord := &data.LogRecord{
-		Key: serializeKeyId(wbFinKey, id),
-		Typ: data.LogRecordFinished,
-	}
-	_, err := writeBatch.db.appendLogRecord(finLogRecord)
-	if err != nil {
-		return nil
-	}
-	// 根据配置信息决定是否持久化(这里不能调用db.Sync(), 因为死锁)
-	if writeBatch.opts.Sync {
-		if err := writeBatch.db.activeFile.Sync(); err != nil {
-			return err
+
+	// 所有record写入磁盘后，更新索引
+	// 但是需要先查询是否存在版本冲突
+	conflict := false
+	for key := range updatePos {
+		oldPos := writeBatch.db.index.Get([]byte(key))
+		if oldPos != nil && oldPos.TxId > writeBatch.txId {
+			conflict = true
+			break
 		}
 	}
-	// 所有record写入磁盘后，更新索引
-	// 记得维护无效字节数
+	for key := range deletePos {
+		oldPos := writeBatch.db.index.Get([]byte(key))
+		if oldPos != nil && oldPos.TxId > writeBatch.txId {
+			conflict = true
+			break
+		}
+	}
+	// 如果冲突了直接返回即可
+	if conflict {
+		return nil
+	}
+	// 同时记得维护无效字节数
 	for key, pos := range updatePos {
 		ok, oldValue := writeBatch.db.index.Put([]byte(key), pos)
 		if !ok {
@@ -140,6 +146,22 @@ func (writeBatch *WriteBatch) Commit() error {
 	}
 	// 清空wb中暂存的record
 	writeBatch.pendingWrites = make(map[string]*data.LogRecord)
+
+	// 最后写入一条finish record
+	finLogRecord := &data.LogRecord{
+		Key: serializeKeyId(wbFinKey, writeBatch.txId),
+		Typ: data.LogRecordFinished,
+	}
+	_, err := writeBatch.db.appendLogRecord(finLogRecord)
+	if err != nil {
+		return nil
+	}
+	// 根据配置信息决定是否持久化(这里不能调用db.Sync(), 因为死锁)
+	if writeBatch.opts.Sync {
+		if err := writeBatch.db.activeFile.Sync(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

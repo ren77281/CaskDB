@@ -2,9 +2,10 @@ package index
 
 import (
 	"bytes"
-	"kv-go/data"
 	"sort"
 	"sync"
+
+	"kv-go/data"
 
 	"github.com/google/btree"
 )
@@ -90,7 +91,7 @@ func NewBTreeIterator(tree *btree.BTree, reverse bool) *BTreeIterator {
 	var i = 0
 	datas := make([]*Item, tree.Len())
 	// 创建闭包，以遍历btree
-	saveItems := func (item btree.Item) bool {
+	saveItems := func(item btree.Item) bool {
 		datas[i] = item.(*Item)
 		i++
 		return true
@@ -103,8 +104,8 @@ func NewBTreeIterator(tree *btree.BTree, reverse bool) *BTreeIterator {
 	}
 	// 构造迭代器并返回
 	return &BTreeIterator{
-		datas: datas,
-		idx: 0,
+		datas:   datas,
+		idx:     0,
 		reverse: reverse,
 	}
 }

@@ -1,8 +1,9 @@
 package index
 
 import (
-	"kv-go/data"
 	"path/filepath"
+
+	"kv-go/data"
 
 	"go.etcd.io/bbolt"
 )
@@ -134,8 +135,8 @@ func NewBPlusTreeIterator(bp *BPlusTree, reverse bool) *BPlusTreeIterator {
 		return nil
 	}
 	it := &BPlusTreeIterator{
-		tx: tx,
-		cursor: tx.Bucket(bucketName).Cursor(),
+		tx:      tx,
+		cursor:  tx.Bucket(bucketName).Cursor(),
 		reverse: reverse,
 	}
 	it.Rewind()

@@ -3,16 +3,18 @@ package db
 import (
 	"fmt"
 	"io"
-	"kv-go/data"
-	"kv-go/fio"
-	"kv-go/index"
-	"kv-go/utils"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
+
+	"kv-go/data"
+	"kv-go/fio"
+	"kv-go/index"
+	"kv-go/utils"
 
 	"github.com/gofrs/flock"
 )
@@ -617,6 +619,7 @@ func (db *DB) NewWriteBatch(opts WBOptions) *WriteBatch {
 		db:            db,
 		pendingWrites: make(map[string]*data.LogRecord),
 		mu:            new(sync.Mutex),
+		txId:          atomic.AddUint64(&db.wbId, 1),
 	}
 }
 

@@ -41,6 +41,7 @@ type LogRecordPos struct {
 	Fid        uint32 // Fid 唯一标识文件
 	Offset     int64  // Offset 记录在文件中的偏移量
 	RecordSize uint32 // record占用磁盘的字节数量
+	TxId       uint64 // 记录的版本号
 }
 
 // 存储WriteBatch的record信息
@@ -68,8 +69,8 @@ func DecodeLogRecordPos(datas []byte) *LogRecordPos {
 	idx += n
 	recordSize, _ := binary.Uvarint(datas[idx:])
 	return &LogRecordPos{
-		Fid:    uint32(fid),
-		Offset: offset,
+		Fid:        uint32(fid),
+		Offset:     offset,
 		RecordSize: uint32(recordSize),
 	}
 }

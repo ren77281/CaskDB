@@ -1,10 +1,11 @@
 package index
 
 import (
-	"kv-go/data"
-	"sync"
-	"sort"
 	"bytes"
+	"sort"
+	"sync"
+
+	"kv-go/data"
 
 	goart "github.com/plar/go-adaptive-radix-tree"
 )
@@ -83,7 +84,7 @@ func NewARTIterator(art *ARTree, reverse bool) *ARTIterator {
 		i = art.Size() - 1
 	}
 	datas := make([]*Item, art.Size())
-	saveItems := func (item goart.Node) bool {
+	saveItems := func(item goart.Node) bool {
 		key := item.Key()
 		val := item.Value().(*data.LogRecordPos)
 		datas[i] = &Item{
@@ -99,8 +100,8 @@ func NewARTIterator(art *ARTree, reverse bool) *ARTIterator {
 	}
 	art.tree.ForEach(saveItems)
 	return &ARTIterator{
-		datas: datas,
-		idx: 0,
+		datas:   datas,
+		idx:     0,
 		reverse: reverse,
 	}
 }
@@ -128,18 +129,22 @@ func (it *ARTIterator) Seek(key []byte) {
 func (it *ARTIterator) Next() {
 	it.idx++
 }
+
 // 判断迭代器是否遍历完成
 func (it *ARTIterator) IsEnd() bool {
 	return it.idx >= len(it.datas)
 }
+
 // 取key
 func (it *ARTIterator) Key() []byte {
 	return it.datas[it.idx].key
 }
+
 // 取value
 func (it *ARTIterator) Value() *data.LogRecordPos {
 	return it.datas[it.idx].pos
 }
+
 // 关闭迭代器
 func (it *ARTIterator) Close() {
 	it.datas = nil
