@@ -152,6 +152,7 @@ func (writeBatch *WriteBatch) Commit() error {
 		Key: serializeKeyId(wbFinKey, writeBatch.txId),
 		Typ: data.LogRecordFinished,
 	}
+	
 	_, err := writeBatch.db.appendLogRecord(finLogRecord)
 	if err != nil {
 		return nil
