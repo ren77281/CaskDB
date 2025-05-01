@@ -2,14 +2,15 @@ package db
 
 import (
 	"encoding/binary"
-	"kv-go/data"
 	"sync"
 	"sync/atomic"
+
+	"kv-go/data"
 )
 
 const (
 	zeroWbId uint64 = 0
-	wbIbKey  string = "wbidkey"
+	wbIdKey  string = "wbidkey"
 )
 
 var wbFinKey = []byte("wb-finsh") // 最后提交的finsh record的key
@@ -117,7 +118,7 @@ func (writeBatch *WriteBatch) Commit() error {
 			return err
 		}
 	}
-	// 所有record写入磁盘后，更新索引，TODO:[]byte->string的转换开销小，但顶不住频繁的转换
+	// 所有record写入磁盘后，更新索引
 	// 记得维护无效字节数
 	for key, pos := range updatePos {
 		ok, oldValue := writeBatch.db.index.Put([]byte(key), pos)

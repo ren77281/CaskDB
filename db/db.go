@@ -54,10 +54,10 @@ func (db *DB) Stat() (*DBStat, error) {
 		return nil, err
 	}
 	return &DBStat{
-		KeyNum: int64(db.index.Size()),
+		KeyNum:      int64(db.index.Size()),
 		DataFileNum: int64(dataFileNum),
 		InvalidSize: db.invalidSize,
-		DiskSize: diskSize,
+		DiskSize:    diskSize,
 	}, nil
 }
 
@@ -146,7 +146,7 @@ func (db *DB) Close() error {
 		return err
 	}
 	logRecord := &data.LogRecord{
-		Key:   []byte(wbIbKey),
+		Key:   []byte(wbIdKey),
 		Value: []byte(strconv.FormatUint(db.wbId, 10)),
 	}
 	encRecord, _ := data.EncodeLogRecord(logRecord)

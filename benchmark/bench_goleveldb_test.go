@@ -1,12 +1,13 @@
 package benchmark
 
 import (
-	"kv-go/utils"
 	"log"
-	"os"
-	"time"
-	"testing"
 	"math/rand"
+	"os"
+	"testing"
+	"time"
+
+	"kv-go/utils"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
