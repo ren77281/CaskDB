@@ -123,7 +123,7 @@ func (writeBatch *WriteBatch) Commit() error {
 	}
 	// 如果冲突了直接返回即可
 	if conflict {
-		return nil
+		return ErrConflict
 	}
 	// 同时记得维护无效字节数
 	for key, pos := range updatePos {
@@ -152,7 +152,7 @@ func (writeBatch *WriteBatch) Commit() error {
 		Key: serializeKeyId(wbFinKey, writeBatch.txId),
 		Typ: data.LogRecordFinished,
 	}
-	
+
 	_, err := writeBatch.db.appendLogRecord(finLogRecord)
 	if err != nil {
 		return nil

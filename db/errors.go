@@ -21,4 +21,5 @@ var (
 	ErrInvalidMergeRatio     = errors.New("merge ratio must be in ther range [0, 1]")
 	ErrMergeRatioUnreached   = errors.New("merge ratio unreach")
 	ErrDiskSpaceNotEnough    = errors.New("disk space not enough")
+	ErrConflict              = errors.New("conflict")
 )
