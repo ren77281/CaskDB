@@ -1,12 +1,13 @@
 package benchmark
 
 import (
-	"kv-go/utils"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-	"math/rand"
+
+	"kv-go/utils"
 
 	"github.com/dgraph-io/badger/v3"
 )
@@ -38,47 +39,91 @@ func init() {
 // }
 
 func Benchmark_PutValue_Badger(b *testing.B) {
+	var durations []int64
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		badgerdb.Update(func(txn *badger.Txn) error {
+		start := time.Now()
+		err := badgerdb.Update(func(txn *badger.Txn) error {
 			return txn.Set(utils.GetTestKey(rander.Int()), utils.GetTestValue(valLen))
 		})
+		if err != nil {
+			b.Fatal(err)
+		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutValue_Badger")
 }
 
 func Benchmark_GetValue_Badger(b *testing.B) {
+	var durations []int64
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		badgerdb.View(func(txn *badger.Txn) error {
-			txn.Get(utils.GetTestKey(rander.Int()))
-			return nil
+		start := time.Now()
+		err := badgerdb.View(func(txn *badger.Txn) error {
+			_, err := txn.Get(utils.GetTestKey(rander.Int()))
+			return err
 		})
+		if err != nil && err != badger.ErrKeyNotFound {
+			b.Fatal(err)
+		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetValue_Badger")
 }
 
 func Benchmark_PutLargeValue_Badger(b *testing.B) {
+	var durations []int64
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		badgerdb.Update(func(txn *badger.Txn) error {
+		start := time.Now()
+		err := badgerdb.Update(func(txn *badger.Txn) error {
 			return txn.Set(utils.GetTestKey(rander.Int()), utils.GetTestValue(largeValLen))
 		})
+		if err != nil {
+			b.Fatal(err)
+		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutLargeValue_Badger")
 }
 
 func Benchmark_GetLargeValue_Badger(b *testing.B) {
+	var durations []int64
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		badgerdb.View(func(txn *badger.Txn) error {
-			txn.Get(utils.GetTestKey(rander.Int()))
-			return nil
+		start := time.Now()
+		err := badgerdb.View(func(txn *badger.Txn) error {
+			_, err := txn.Get(utils.GetTestKey(rander.Int()))
+			return err
 		})
+		if err != nil && err != badger.ErrKeyNotFound {
+			b.Fatal(err)
+		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetLargeValue_Badger")
 }

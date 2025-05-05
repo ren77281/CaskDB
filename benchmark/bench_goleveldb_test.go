@@ -39,51 +39,82 @@ func init() {
 // 		}
 // 	}
 // }
-
 func Benchmark_PutValue_GoLevelDB(b *testing.B) {
+	var durations []int64
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		key := utils.GetTestKey(rander.Int())
 		val := utils.GetTestValue(valLen)
 		err := levelDb.Put(key, val, &opt.WriteOptions{Sync: false})
 		if err != nil {
 			log.Fatal("leveldb write data err.", err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutValue_GoLevelDB")
 }
 
 func Benchmark_GetValue_GoLevelDB(b *testing.B) {
+	var durations []int64
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		_, err := levelDb.Get(utils.GetTestKey(rander.Int()), nil)
 		if err != nil && err != leveldb.ErrNotFound {
 			log.Fatal("leveldb read data err.", err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetValue_GoLevelDB")
 }
 
 func Benchmark_PutLargeValue_GoLevelDB(b *testing.B) {
+	var durations []int64
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		key := utils.GetTestKey(rander.Int())
 		val := utils.GetTestValue(largeValLen)
 		err := levelDb.Put(key, val, &opt.WriteOptions{Sync: false})
 		if err != nil {
 			log.Fatal("leveldb write data err.", err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutLargeValue_GoLevelDB")
 }
 
 func Benchmark_GetLargeValue_GoLevelDB(b *testing.B) {
+	var durations []int64
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		_, err := levelDb.Get(utils.GetTestKey(rander.Int()), nil)
 		if err != nil && err != leveldb.ErrNotFound {
 			log.Fatal("leveldb read data err.", err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetLargeValue_GoLevelDB")
 }

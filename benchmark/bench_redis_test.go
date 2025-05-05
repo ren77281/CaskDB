@@ -2,10 +2,11 @@ package benchmark
 
 import (
 	"context"
-	"kv-go/utils"
 	"math/rand"
 	"testing"
 	"time"
+
+	"kv-go/utils"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -27,53 +28,80 @@ func init() {
 	// 初始化随机数生成器
 	rander = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
-
 func Benchmark_PutValue_Redis(b *testing.B) {
+	var durations []int64
 	ctx := context.Background()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		err := rdb.Set(ctx, string(utils.GetTestKey(rander.Int())), utils.GetTestValue(valLen), 0).Err()
 		if err != nil {
 			panic(err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutValue_Redis")
 }
 
 func Benchmark_GetValue_Redis(b *testing.B) {
+	var durations []int64
 	ctx := context.Background()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		rdb.Get(ctx, string(utils.GetTestKey(rander.Int())))
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetValue_Redis")
 }
 
 func Benchmark_PutLargeValue_Redis(b *testing.B) {
+	var durations []int64
 	ctx := context.Background()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		err := rdb.Set(ctx, string(utils.GetTestKey(rander.Int())), utils.GetTestValue(largeValLen), 0).Err()
 		if err != nil {
 			panic(err)
 		}
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "PutLargeValue_Redis")
 }
 
 func Benchmark_GetLargeValue_Redis(b *testing.B) {
+	var durations []int64
 	ctx := context.Background()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
+		start := time.Now()
 		rdb.Get(ctx, string(utils.GetTestKey(rander.Int())))
+		elapsed := time.Since(start).Microseconds()
+		durations = append(durations, elapsed)
 	}
+
+	b.StopTimer()
+	reportP99Latency(durations, "GetLargeValue_Redis")
 }

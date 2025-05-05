@@ -7,14 +7,14 @@ import (
 
 // TODO: 对于具有versionId的结构，如何删除其字段呢？
 func (rds *RedisDataStructure) Del(key []byte) error {
-	return rds.db.Delete(key)
+	return rds.Db.Delete(key)
 }
 
 func (rds *RedisDataStructure) Type(key []byte) (RedisDataType, error) {
 	if len(key) == 0 {
 		return 0, bitcask.ErrEmptyKey
 	}
-	encValue, err := rds.db.Get(key)
+	encValue, err := rds.Db.Get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -29,7 +29,7 @@ func (rds *RedisDataStructure) getOrCreateMetaData(key []byte, dataType RedisDat
 	if len(key) == 0 {
 		return nil, bitcask.ErrEmptyKey
 	}
-	encMetaData, err := rds.db.Get(key)
+	encMetaData, err := rds.Db.Get(key)
 	if err != nil && err != bitcask.ErrKeyNotFound {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (rds *RedisDataStructure) findMetaData(key []byte, dataType RedisDataType) 
 	if len(key) == 0 {
 		return nil, bitcask.ErrEmptyKey
 	}
-	val, err := rds.db.Get(key)
+	val, err := rds.Db.Get(key)
 	// 如果不存在或者有其他问题，则返回
 	if err != nil {
 		return nil, err

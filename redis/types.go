@@ -3,8 +3,9 @@ package redis
 import (
 	"encoding/binary"
 	"errors"
-	bitcask "kv-go/db"
 	"time"
+
+	bitcask "kv-go/db"
 )
 
 type RedisDataType = byte
@@ -25,7 +26,7 @@ var (
 )
 
 type RedisDataStructure struct {
-	db *bitcask.DB
+	Db *bitcask.DB
 }
 
 func NewRedisDataStructure(opts bitcask.DBOptions) (*RedisDataStructure, error) {
@@ -33,11 +34,11 @@ func NewRedisDataStructure(opts bitcask.DBOptions) (*RedisDataStructure, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &RedisDataStructure{db: db}, nil
+	return &RedisDataStructure{Db: db}, nil
 }
 
 func (rds *RedisDataStructure) Close() error {
-	return rds.db.Close()
+	return rds.Db.Close()
 }
 
 // ==================== String 结构 ====================
@@ -62,7 +63,7 @@ func (rds *RedisDataStructure) Set(key, value []byte, ttl time.Duration) error {
 	copy(encValue[:idx], buf)
 	copy(encValue[idx:], value)
 	// 调用存储引擎的Put接口
-	if err := rds.db.Put(key, encValue); err != nil {
+	if err := rds.Db.Put(key, encValue); err != nil {
 		return err
 	}
 	return nil
@@ -73,7 +74,7 @@ func (rds *RedisDataStructure) Get(key []byte) ([]byte, error) {
 		return nil, nil
 	}
 	// 调用存储引擎的Get接口
-	encValue, err := rds.db.Get(key)
+	encValue, err := rds.Db.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (rds *RedisDataStructure) HSet(key []byte, fields, values [][]byte) (int, e
 	}
 	cnt := 0
 	n := len(fields)
-	wb := rds.db.NewWriteBatch(bitcask.DefaultWBOptions)
+	wb := rds.Db.NewWriteBatch(bitcask.DefaultWBOptions)
 	for i := 0; i < n; i++ {
 		ok, err := rds.hSet(meta, key, fields[i], values[i], wb)
 		if err != nil {
@@ -139,7 +140,7 @@ func (rds *RedisDataStructure) hSet(meta *metaData, key, field, value []byte, wb
 	}
 	encFieldKey := fieldKey.encode()
 	// 查询是否存在field
-	_, err := rds.db.Get(encFieldKey)
+	_, err := rds.Db.Get(encFieldKey)
 	exist := true
 	// 不存在，更新meta
 	if err != nil {
@@ -160,7 +161,7 @@ func (rds *RedisDataStructure) HGet(key, field []byte) ([]byte, error) {
 		return nil, bitcask.ErrEmptyKey
 	}
 	// 先获取元数据
-	encMetaData, err := rds.db.Get(key)
+	encMetaData, err := rds.Db.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -174,12 +175,12 @@ func (rds *RedisDataStructure) HGet(key, field []byte) ([]byte, error) {
 	}
 	// 构造field
 	fieldKey := &hashField{
-		key: key,
-		field: field,
+		key:       key,
+		field:     field,
 		versionId: meta.versionId,
 	}
 	// 返回这个字段的查找结果
-	return rds.db.Get(fieldKey.encode())
+	return rds.Db.Get(fieldKey.encode())
 }
 
 func (rds *RedisDataStructure) HDel(key []byte, fields [][]byte) (int, error) {
@@ -187,7 +188,7 @@ func (rds *RedisDataStructure) HDel(key []byte, fields [][]byte) (int, error) {
 		return 0, bitcask.ErrEmptyKey
 	}
 	// 先获取元数据
-	encMetaData, err := rds.db.Get(key)
+	encMetaData, err := rds.Db.Get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -205,7 +206,7 @@ func (rds *RedisDataStructure) HDel(key []byte, fields [][]byte) (int, error) {
 		return 0, nil
 	}
 	cnt := 0
-	wb := rds.db.NewWriteBatch(bitcask.DefaultWBOptions)
+	wb := rds.Db.NewWriteBatch(bitcask.DefaultWBOptions)
 	for _, field := range fields {
 		ok, err := rds.hDel(meta, key, field, wb)
 		if err != nil {
@@ -235,7 +236,7 @@ func (rds *RedisDataStructure) hDel(meta *metaData, key, field []byte, wb *bitca
 		versionId: meta.versionId,
 	}
 	encFieldKey := fieldKey.encode()
-	_, err := rds.db.Get(encFieldKey)
+	_, err := rds.Db.Get(encFieldKey)
 	// 不存在则直接返回
 	if err == bitcask.ErrKeyNotFound {
 		return false, nil
@@ -247,7 +248,7 @@ func (rds *RedisDataStructure) hDel(meta *metaData, key, field []byte, wb *bitca
 	if err := wb.Delete(encFieldKey); err != nil {
 		return false, err
 	}
-	return true, nil	
+	return true, nil
 }
 
 // ==================== Set结构 ====================
@@ -259,7 +260,7 @@ func (rds *RedisDataStructure) SAdd(key []byte, members [][]byte) (int, error) {
 	}
 	var cnt = 0
 	// 开启writebatch
-	wb := rds.db.NewWriteBatch(bitcask.DefaultWBOptions)
+	wb := rds.Db.NewWriteBatch(bitcask.DefaultWBOptions)
 	for _, member := range members {
 		ok, err := rds.sAdd(meta, key, member, wb)
 		if err != nil {
@@ -294,7 +295,7 @@ func (rds *RedisDataStructure) sAdd(meta *metaData, key, member []byte, wb *bitc
 	}
 	// 查找是否存在member
 	encMemberKey := memberKey.encode()
-	_, err := rds.db.Get(encMemberKey)
+	_, err := rds.Db.Get(encMemberKey)
 	if err != nil {
 		if err == bitcask.ErrKeyNotFound {
 			// 不存在则插入
@@ -322,7 +323,7 @@ func (rds *RedisDataStructure) SIsMember(key, member []byte) (bool, error) {
 		member:    member,
 		versionId: meta.versionId,
 	}
-	_, err = rds.db.Get(memberKey.encode())
+	_, err = rds.Db.Get(memberKey.encode())
 	if err != nil {
 		if err == bitcask.ErrDataFileNotFound {
 			return false, nil
@@ -343,7 +344,7 @@ func (rds *RedisDataStructure) SRem(key []byte, members [][]byte) (int, error) {
 	}
 	var cnt = 0
 	// 开启writebatch
-	wb := rds.db.NewWriteBatch(bitcask.DefaultWBOptions)
+	wb := rds.Db.NewWriteBatch(bitcask.DefaultWBOptions)
 	for _, member := range members {
 		ok, err := rds.sRem(meta, key, member, wb)
 		if err != nil {
@@ -401,7 +402,7 @@ func (rds *RedisDataStructure) push(key []byte, field []byte, head bool) (uint32
 	}
 	// 再根据元数据构造node
 	liseNode := &listNode{
-		key: key,
+		key:       key,
 		versionId: meta.versionId,
 	}
 	// 先移动head/tail，再将其作为idx
@@ -414,7 +415,7 @@ func (rds *RedisDataStructure) push(key []byte, field []byte, head bool) (uint32
 		liseNode.idx = meta.tail
 	}
 	// 新建wb更新元数据
-	wb := rds.db.NewWriteBatch(bitcask.DefaultWBOptions)
+	wb := rds.Db.NewWriteBatch(bitcask.DefaultWBOptions)
 	if err := wb.Put(liseNode.encode(), field); err != nil {
 		return 0, err
 	}
@@ -424,7 +425,7 @@ func (rds *RedisDataStructure) push(key []byte, field []byte, head bool) (uint32
 	if err := wb.Commit(); err != nil {
 		return 0, err
 	}
-	return uint32(meta.tail-meta.head), nil
+	return uint32(meta.tail - meta.head), nil
 }
 
 func (rds *RedisDataStructure) LPop(key []byte) ([]byte, error) {
@@ -447,7 +448,7 @@ func (rds *RedisDataStructure) pop(key []byte, head bool) ([]byte, error) {
 	}
 	// 构造listNode，直接删除
 	listNode := &listNode{
-		key: key,
+		key:       key,
 		versionId: meta.versionId,
 	}
 	// 移动前的head/tail是要被删除的元素位置
@@ -460,13 +461,13 @@ func (rds *RedisDataStructure) pop(key []byte, head bool) ([]byte, error) {
 		meta.tail--
 	}
 	// 判断是否存在
-	val, err := rds.db.Get(listNode.encode())
+	val, err := rds.Db.Get(listNode.encode())
 	if err != nil {
 		return nil, err
 	}
 	// 这里可以不删除，如果后续继续push这些field将被覆盖
 	// 或者写一个后台清理线程TODO
-	if err := rds.db.Put(key, meta.encode()); err != nil {
+	if err := rds.Db.Put(key, meta.encode()); err != nil {
 		return nil, err
 	}
 	return val, nil

@@ -79,3 +79,154 @@ BenchmarkAll/Redis/GetLargeValue           10000            107535 ns/op        
 PASS
 ok      kv-go/benchmark 38.347s
 ```
+
+```bash
+bench=BenchmarkALLTX -benchtime=10000x
+2025/05/02 17:09:55 
+[P99] PutValue_BaskDB: P99=280μs, AVG=280μs (n=1)
+goos: darwin
+goarch: amd64
+pkg: kv-go/benchmark
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkALLTX/BaskDB/PutValue-12               2025/05/02 17:09:55 
+[P99] PutValue_BaskDB: P99=31μs, AVG=13μs (n=10000)
+   10000             13959 ns/op            2483 B/op         10 allocs/op
+BenchmarkALLTX/BaskDB/PutValue_WithTX-12           10000             17928 ns/op            6149 B/op         15 allocs/op
+2025/05/02 17:09:55 
+[P99] PutLargeValue_BaskDB: P99=179μs, AVG=179μs (n=1)
+BenchmarkALLTX/BaskDB/PutLargeValue-12          2025/05/02 17:09:56 
+[P99] PutLargeValue_BaskDB: P99=99μs, AVG=55μs (n=10000)
+   10000             55739 ns/op           18938 B/op         10 allocs/op
+BenchmarkALLTX/BaskDB/PutLargeValue_WithTX-12              10000             71025 ns/op           48333 B/op         15 allocs/op
+PASS
+ok      kv-go/benchmark 1.886s
+```
+
+```bash
+2025/05/02 16:35:47 
+[P99] PutValue_BaskDB: P99=307μs, AVG=307μs (n=1)
+goos: darwin
+goarch: amd64
+pkg: kv-go/benchmark
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkAll/BaskDB/PutValue-12                 2025/05/02 16:35:48 
+[P99] PutValue_BaskDB: P99=30μs, AVG=13μs (n=10000)
+   10000             13720 ns/op            2483 B/op         10 allocs/op
+2025/05/02 16:35:48 
+[P99] GetValue_BaskDB: P99=16μs, AVG=16μs (n=1)
+BenchmarkAll/BaskDB/GetValue-12                 2025/05/02 16:35:48 
+[P99] GetValue_BaskDB: P99=1μs, AVG=0μs (n=10000)
+   10000               885.3 ns/op           139 B/op          4 allocs/op
+2025/05/02 16:35:48 
+[P99] PutLargeValue_BaskDB: P99=89μs, AVG=89μs (n=1)
+BenchmarkAll/BaskDB/PutLargeValue-12            2025/05/02 16:35:48 
+[P99] PutLargeValue_BaskDB: P99=111μs, AVG=60μs (n=10000)
+   10000             60712 ns/op           18935 B/op         10 allocs/op
+2025/05/02 16:35:48 
+[P99] GetLargeValue_BaskDB: P99=14μs, AVG=14μs (n=1)
+BenchmarkAll/BaskDB/GetLargeValue-12            2025/05/02 16:35:48 
+[P99] GetLargeValue_BaskDB: P99=1μs, AVG=0μs (n=10000)
+   10000               850.3 ns/op           139 B/op          4 allocs/op
+2025/05/02 16:35:48 
+[P99] PutValue_Badger: P99=82μs, AVG=82μs (n=1)
+BenchmarkAll/Badger/PutValue-12                 2025/05/02 16:35:48 
+[P99] PutValue_Badger: P99=41μs, AVG=18μs (n=10000)
+   10000             19206 ns/op            3229 B/op         44 allocs/op
+2025/05/02 16:35:48 
+[P99] GetValue_Badger: P99=31μs, AVG=31μs (n=1)
+BenchmarkAll/Badger/GetValue-12                 2025/05/02 16:35:48 
+[P99] GetValue_Badger: P99=6μs, AVG=1μs (n=10000)
+   10000              2032 ns/op             532 B/op         11 allocs/op
+2025/05/02 16:35:48 
+[P99] PutLargeValue_Badger: P99=102μs, AVG=102μs (n=1)
+BenchmarkAll/Badger/PutLargeValue-12            2025/05/02 16:35:49 
+[P99] PutLargeValue_Badger: P99=110μs, AVG=61μs (n=10000)
+   10000             62475 ns/op           15405 B/op         45 allocs/op
+2025/05/02 16:35:49 
+[P99] GetLargeValue_Badger: P99=45μs, AVG=45μs (n=1)
+BenchmarkAll/Badger/GetLargeValue-12            2025/05/02 16:35:49 
+[P99] GetLargeValue_Badger: P99=7μs, AVG=1μs (n=10000)
+   10000              2319 ns/op             532 B/op         11 allocs/op
+2025/05/02 16:35:49 
+[P99] PutValue_BoltDB: P99=75μs, AVG=75μs (n=1)
+BenchmarkAll/BoltDB/PutValue-12                 2025/05/02 16:35:50 
+[P99] PutValue_BoltDB: P99=102μs, AVG=61μs (n=10000)
+   10000             62518 ns/op           17390 B/op         99 allocs/op
+2025/05/02 16:35:50 
+[P99] GetValue_BoltDB: P99=27μs, AVG=27μs (n=1)
+BenchmarkAll/BoltDB/GetValue-12                 2025/05/02 16:35:50 
+[P99] GetValue_BoltDB: P99=5μs, AVG=1μs (n=10000)
+   10000              2148 ns/op             745 B/op         22 allocs/op
+2025/05/02 16:35:50 
+[P99] PutLargeValue_BoltDB: P99=158μs, AVG=158μs (n=1)
+BenchmarkAll/BoltDB/PutLargeValue-12            2025/05/02 16:35:51 
+[P99] PutLargeValue_BoltDB: P99=220μs, AVG=129μs (n=10000)
+   10000            129881 ns/op           51868 B/op        113 allocs/op
+2025/05/02 16:35:51 
+[P99] GetLargeValue_BoltDB: P99=29μs, AVG=29μs (n=1)
+BenchmarkAll/BoltDB/GetLargeValue-12            2025/05/02 16:35:51 
+[P99] GetLargeValue_BoltDB: P99=7μs, AVG=2μs (n=10000)
+   10000              3221 ns/op             766 B/op         25 allocs/op
+2025/05/02 16:35:51 
+[P99] PutValue_GoLevelDB: P99=154μs, AVG=154μs (n=1)
+BenchmarkAll/GoLevelDB/PutValue-12              2025/05/02 16:35:51 
+[P99] PutValue_GoLevelDB: P99=40μs, AVG=19μs (n=10000)
+   10000             20105 ns/op            2496 B/op          9 allocs/op
+2025/05/02 16:35:51 
+[P99] GetValue_GoLevelDB: P99=217μs, AVG=217μs (n=1)
+BenchmarkAll/GoLevelDB/GetValue-12              2025/05/02 16:35:51 
+[P99] GetValue_GoLevelDB: P99=12μs, AVG=3μs (n=10000)
+   10000              4088 ns/op            1890 B/op         15 allocs/op
+2025/05/02 16:35:51 
+[P99] PutLargeValue_GoLevelDB: P99=116μs, AVG=116μs (n=1)
+BenchmarkAll/GoLevelDB/PutLargeValue-12         2025/05/02 16:35:53 
+[P99] PutLargeValue_GoLevelDB: P99=216μs, AVG=164μs (n=10000)
+   10000            165572 ns/op           15492 B/op         12 allocs/op
+2025/05/02 16:35:53 
+[P99] GetLargeValue_GoLevelDB: P99=600μs, AVG=600μs (n=1)
+BenchmarkAll/GoLevelDB/GetLargeValue-12         2025/05/02 16:35:53 
+[P99] GetLargeValue_GoLevelDB: P99=94μs, AVG=36μs (n=10000)
+   10000             37393 ns/op           29317 B/op         75 allocs/op
+2025/05/02 16:35:53 
+[P99] PutValue_RoseDB: P99=265μs, AVG=265μs (n=1)
+BenchmarkAll/RoseDB/PutValue-12                 2025/05/02 16:35:54 
+[P99] PutValue_RoseDB: P99=59μs, AVG=39μs (n=10000)
+   10000             39968 ns/op            2711 B/op         15 allocs/op
+2025/05/02 16:35:54 
+[P99] GetValue_RoseDB: P99=30μs, AVG=30μs (n=1)
+BenchmarkAll/RoseDB/GetValue-12                 2025/05/02 16:35:54 
+[P99] GetValue_RoseDB: P99=4μs, AVG=0μs (n=10000)
+   10000              1442 ns/op             146 B/op          4 allocs/op
+2025/05/02 16:35:54 
+[P99] PutLargeValue_RoseDB: P99=98μs, AVG=98μs (n=1)
+BenchmarkAll/RoseDB/PutLargeValue-12            2025/05/02 16:35:55 
+[P99] PutLargeValue_RoseDB: P99=118μs, AVG=65μs (n=10000)
+   10000             66591 ns/op           14538 B/op         14 allocs/op
+2025/05/02 16:35:55 
+[P99] GetLargeValue_RoseDB: P99=24μs, AVG=24μs (n=1)
+BenchmarkAll/RoseDB/GetLargeValue-12            2025/05/02 16:35:55 
+[P99] GetLargeValue_RoseDB: P99=2μs, AVG=0μs (n=10000)
+   10000              1174 ns/op             140 B/op          4 allocs/op
+2025/05/02 16:35:55 
+[P99] PutValue_Redis: P99=211μs, AVG=211μs (n=1)
+BenchmarkAll/Redis/PutValue-12                  2025/05/02 16:35:56 
+[P99] PutValue_Redis: P99=189μs, AVG=111μs (n=10000)
+   10000            111985 ns/op            2067 B/op         15 allocs/op
+2025/05/02 16:35:56 
+[P99] GetValue_Redis: P99=140μs, AVG=140μs (n=1)
+BenchmarkAll/Redis/GetValue-12                  2025/05/02 16:35:57 
+[P99] GetValue_Redis: P99=136μs, AVG=93μs (n=10000)
+   10000             94792 ns/op             329 B/op         10 allocs/op
+2025/05/02 16:35:57 
+[P99] PutLargeValue_Redis: P99=260μs, AVG=260μs (n=1)
+BenchmarkAll/Redis/PutLargeValue-12             2025/05/02 16:35:59 
+[P99] PutLargeValue_Redis: P99=281μs, AVG=198μs (n=10000)
+   10000            199422 ns/op           14240 B/op         15 allocs/op
+2025/05/02 16:35:59 
+[P99] GetLargeValue_Redis: P99=15547μs, AVG=15547μs (n=1)
+BenchmarkAll/Redis/GetLargeValue-12             2025/05/02 16:36:00 
+[P99] GetLargeValue_Redis: P99=128μs, AVG=85μs (n=10000)
+   10000             86664 ns/op             328 B/op         10 allocs/op
+PASS
+ok      kv-go/benchmark 12.366s
+```

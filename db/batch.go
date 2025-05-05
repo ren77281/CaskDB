@@ -131,7 +131,7 @@ func (writeBatch *WriteBatch) Commit() error {
 		if !ok {
 			return ErrUpdateIndexFailed
 		}
-		
+
 		if oldValue != nil {
 			writeBatch.db.invalidSize += int64(oldValue.RecordSize)
 		}

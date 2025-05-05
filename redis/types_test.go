@@ -1,10 +1,11 @@
 package redis
 
 import (
-	bitcask "kv-go/db"
-	"kv-go/utils"
 	"os"
 	"testing"
+
+	bitcask "kv-go/db"
+	"kv-go/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestString(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 在没有数据的情况下，Delete，Get
@@ -51,7 +52,7 @@ func TestString(t *testing.T) {
 			assert.Equal(t, err, bitcask.ErrKeyNotFound)
 			assert.Nil(t, val)
 		}
-		for i := cnt/2; i < cnt; i++ {
+		for i := cnt / 2; i < cnt; i++ {
 			val, err := rds.Get(utils.GetTestKey(i))
 			assert.Nil(t, err)
 			assert.Equal(t, val, vals[i])
@@ -65,7 +66,7 @@ func TestHash1(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 在没有数据的情况下，Delete，Get
@@ -106,7 +107,7 @@ func TestHash1(t *testing.T) {
 			assert.Nil(t, val)
 			assert.Equal(t, err, bitcask.ErrKeyNotFound)
 		}
-		for i := cnt/2; i < cnt; i++ {
+		for i := cnt / 2; i < cnt; i++ {
 			val, err := rds.HGet(utils.GetTestKey(1), fields[i])
 			assert.Nil(t, err)
 			assert.Equal(t, val, vals[i])
@@ -122,7 +123,7 @@ func TestHash2(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 往不同的key中插入一条field，get验证
@@ -147,7 +148,7 @@ func TestHash2(t *testing.T) {
 			assert.Equal(t, 1, realCnt)
 		}
 		// 再get验证
-		for i := cnt/2; i < cnt; i++ {
+		for i := cnt / 2; i < cnt; i++ {
 			val, err := rds.HGet(utils.GetTestKey(i), utils.GetTestKey(i))
 			assert.Nil(t, err)
 			assert.Equal(t, val, vals[i])
@@ -161,7 +162,7 @@ func TestHash3(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 往不同的key中插入多条field，get验证
@@ -170,7 +171,7 @@ func TestHash3(t *testing.T) {
 		fieldKeys := make([][]byte, fieldCnt)
 		// 先保存每个key将要存储的field-value
 		for i := 0; i < fieldCnt; i++ {
-			fieldKeys[i] = utils.GetTestKey(i+10000)
+			fieldKeys[i] = utils.GetTestKey(i + 10000)
 			fieldVals[i] = utils.GetTestValue(128)
 		}
 		// HSet
@@ -194,7 +195,7 @@ func TestHash3(t *testing.T) {
 		}
 		// 再get验证
 		for i := 0; i < keyCnt; i++ {
-			for j := fieldCnt/2; j < fieldCnt; j++ {
+			for j := fieldCnt / 2; j < fieldCnt; j++ {
 				val, err := rds.HGet(utils.GetTestKey(i), fieldKeys[j])
 				assert.Nil(t, err)
 				assert.Equal(t, val, fieldVals[j])
@@ -209,7 +210,7 @@ func TestSet1(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 没有数据时，get，delete
@@ -217,7 +218,7 @@ func TestSet1(t *testing.T) {
 		for i := 0; i < cnt; i++ {
 			ok, err := rds.SIsMember(utils.GetTestKey(i), utils.GetTestKey(i))
 			assert.NotNil(t, err)
-			assert.False(t,ok)
+			assert.False(t, ok)
 		}
 		for i := 0; i < cnt; i++ {
 			realCnt, err := rds.SRem(utils.GetTestKey(i), [][]byte{utils.GetTestKey(i)})
@@ -248,7 +249,7 @@ func TestSet1(t *testing.T) {
 			assert.Nil(t, err)
 			assert.True(t, ok)
 		}
-		for i := cnt/2; i < cnt; i++ {
+		for i := cnt / 2; i < cnt; i++ {
 			ok, err := rds.SIsMember(utils.GetTestKey(1), members[i])
 			assert.NotNil(t, err)
 			assert.False(t, ok)
@@ -262,7 +263,7 @@ func TestSet2(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 向不同的key插入一个member
@@ -289,7 +290,7 @@ func TestSet2(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, ok, true)
 		}
-		for i := cnt/2; i < cnt; i++ {
+		for i := cnt / 2; i < cnt; i++ {
 			ok, err := rds.SIsMember(utils.GetTestKey(1), members[i])
 			assert.NotNil(t, err)
 			assert.Equal(t, ok, false)
@@ -303,7 +304,7 @@ func TestSet3(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 向不同的key插入多个member
@@ -342,7 +343,7 @@ func TestSet3(t *testing.T) {
 			}
 		}
 		for i := 0; i < keyCnt; i++ {
-			for j := memberCnt/2; j < memberCnt; j++ {
+			for j := memberCnt / 2; j < memberCnt; j++ {
 				ok, err := rds.SIsMember(utils.GetTestKey(i), memberKeys[j])
 				assert.Equal(t, err, bitcask.ErrKeyNotFound)
 				assert.Equal(t, ok, false)
@@ -357,7 +358,7 @@ func TestList1(t *testing.T) {
 	db, err := bitcask.Open(opts)
 	assert.Nil(t, err)
 	rds := &RedisDataStructure{
-		db: db,
+		Db: db,
 	}
 	{
 		// 没有数据时，pop
@@ -381,12 +382,12 @@ func TestList1(t *testing.T) {
 			assert.Equal(t, sz, uint32(cnt+i+1))
 		}
 		// 再删除验证数据是否正确
-		for i := cnt-1; i >= 0; i-- {
+		for i := cnt - 1; i >= 0; i-- {
 			val, err := rds.LPop(utils.GetTestKey(keyNum))
 			assert.Nil(t, err)
 			assert.Equal(t, val, utils.GetTestKey(i))
 		}
-		for i := cnt-1; i >= 0; i-- {
+		for i := cnt - 1; i >= 0; i-- {
 			val, err := rds.RPop(utils.GetTestKey(keyNum))
 			assert.Nil(t, err)
 			assert.Equal(t, val, utils.GetTestKey(i))
@@ -404,12 +405,12 @@ func TestList1(t *testing.T) {
 			assert.Equal(t, sz, uint32(cnt+i+1))
 		}
 		// 再删除验证数据是否正确
-		for i := cnt-1; i >= 0; i-- {
+		for i := cnt - 1; i >= 0; i-- {
 			val, err := rds.LPop(utils.GetTestKey(keyNum))
 			assert.Nil(t, err)
 			assert.Equal(t, val, utils.GetTestKey(i))
 		}
-		for i := cnt-1; i >= 0; i-- {
+		for i := cnt - 1; i >= 0; i-- {
 			val, err := rds.RPop(utils.GetTestKey(keyNum))
 			assert.Nil(t, err)
 			assert.Equal(t, val, utils.GetTestKey(i))
