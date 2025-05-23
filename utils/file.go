@@ -1,18 +1,17 @@
 package utils
 
 import (
+	"github.com/shirou/gopsutil/v3/disk"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
-
 
 func DirSize(dirPath string) (int64, error) {
 	var sz int64 = 0
-	err := filepath.Walk(dirPath, func (_ string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(dirPath, func(_ string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -25,15 +24,11 @@ func DirSize(dirPath string) (int64, error) {
 }
 
 func AvailableDiskSize() (int64, error) {
-	wd, err := syscall.Getwd()
+	usage, err := disk.Usage(".") // "." 表示当前目录
 	if err != nil {
 		return 0, err
 	}
-	var stat syscall.Statfs_t
-	if err = syscall.Statfs(wd, &stat); err != nil {
-		return 0, err
-	}
-	return int64(stat.Bavail) * int64(stat.Bsize), nil
+	return int64(usage.Free), nil
 }
 
 func CopyDir(src, dest string, exclude map[string]struct{}) error {

@@ -11,6 +11,7 @@ const (
 	BTreeType IndexType = iota
 	BPlusTreeType
 	ARTreeType
+	CuckooType
 )
 
 // 索引的节点封装，将k-v封装成Item, 实现Less特征即可
@@ -62,6 +63,9 @@ func NewIndexer(indexerType IndexType, dirPath string, sync bool) Indexer {
 		return NewBPlusTree(dirPath, sync)
 	case ARTreeType:
 		return NewARTree()
+	case CuckooType:
+		return NewCuckooHash(128)
+
 	default:
 		return nil
 	}

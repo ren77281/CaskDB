@@ -39,7 +39,7 @@ func (db *DB) merge() error {
 		return err
 	}
 	// 判断比例是否达到阈值
-	if float32(db.invalidSize) / float32(dirSize) < db.opts.MergeRatio {
+	if float32(db.invalidSize)/float32(dirSize) < db.opts.MergeRatio {
 		db.mu.Unlock()
 		return ErrMergeRatioUnreached
 	}
@@ -49,7 +49,7 @@ func (db *DB) merge() error {
 		db.mu.Unlock()
 		return err
 	}
-	if avaliableDiskSize <= dirSize - db.invalidSize {
+	if avaliableDiskSize <= dirSize-db.invalidSize {
 		db.mu.Unlock()
 		return ErrDiskSpaceNotEnough
 	}
@@ -173,6 +173,7 @@ func (db *DB) merge() error {
 
 func (db *DB) getMergePath() string {
 	dir := path.Dir(path.Clean(db.opts.DirPath))
+	dir = ""
 	base := path.Base(db.opts.DirPath)
 	return filepath.Join(dir, base+mergeDirName)
 }
@@ -200,7 +201,7 @@ func (db *DB) loadMergeFiles() error {
 		if fileName == data.MergeFilishedFileName {
 			finished = true
 		}
-		if fileName == data.NextWriteBatchIdFileName || fileName == fileLockName{
+		if fileName == data.NextWriteBatchIdFileName || fileName == fileLockName {
 			continue
 		}
 		fileNames = append(fileNames, fileName)

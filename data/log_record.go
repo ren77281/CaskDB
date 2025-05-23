@@ -1,8 +1,11 @@
 package data
 
 import (
+	"bytes"
 	"encoding/binary"
 	"hash/crc32"
+
+	"github.com/pierrec/lz4/v4"
 )
 
 type LogRecordType = byte
@@ -51,6 +54,29 @@ type WBLogRecord struct {
 	Typ LogRecordType
 }
 
+// 压缩 value（使用 LZ4）
+func compressValue(value []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	writer := lz4.NewWriter(&buf)
+	if _, err := writer.Write(value); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// 解压 value（使用 LZ4）
+func decompressValue(value []byte) ([]byte, error) {
+	reader := lz4.NewReader(bytes.NewReader(value))
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(reader); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // encodeRecordPos 将LogRecordPos序列化成[]byte
 func EncodeLogRecordPos(logRecordPos *LogRecordPos) []byte {
 	encLogRecordPos := make([]byte, 2*binary.MaxVarintLen32+binary.MaxVarintLen64)
@@ -77,21 +103,27 @@ func DecodeLogRecordPos(datas []byte) *LogRecordPos {
 
 // EncodeRecord 将LogRecord序列化成[]byte
 func EncodeLogRecord(logRecord *LogRecord) ([]byte, int64) {
+	// 对 Value 字段进行压缩
+	compressedValue, err := compressValue(logRecord.Value)
+	if err != nil {
+		panic("压缩失败: " + err.Error())
+	}
+
 	// encode header部分
 	header := make([]byte, maxLogRecordHeadSize)
 	header[4] = logRecord.Typ
 	// encode key size, value size
 	var idx = 5
 	idx += binary.PutVarint(header[idx:], int64(len(logRecord.Key)))
-	idx += binary.PutVarint(header[idx:], int64(len(logRecord.Value)))
+	idx += binary.PutVarint(header[idx:], int64(len(compressedValue)))
 	// 计算logRecord的总长度并定义bytes存储logRecord
-	sz := idx + len(logRecord.Key) + len(logRecord.Value)
+	sz := idx + len(logRecord.Key) + len(compressedValue)
 	encodeRecord := make([]byte, sz)
 	// 拷贝已经encode完成的header
 	copy(encodeRecord[:idx], header[:idx])
 	// 拷贝已经是byte的key-value
 	copy(encodeRecord[idx:], logRecord.Key)
-	copy(encodeRecord[idx+len(logRecord.Key):], logRecord.Value)
+	copy(encodeRecord[idx+len(logRecord.Key):], compressedValue)
 	// 对 crc 字段外的数据，计算crc检验和
 	crc := crc32.ChecksumIEEE(encodeRecord[4:])
 	binary.LittleEndian.PutUint32(encodeRecord[:4], crc)
@@ -130,4 +162,34 @@ func getLogRecordCRC(logRecord *LogRecord, header []byte) uint32 {
 	crc = crc32.Update(crc, crc32.IEEETable, logRecord.Key)
 	crc = crc32.Update(crc, crc32.IEEETable, logRecord.Value)
 	return crc
+}
+
+// DecodeLogRecord 解码并解压LogRecord数据（新增）
+func DecodeLogRecord(encoded []byte) (*LogRecord, error) {
+	header, headerSize := decodeLogRecordHeader(encoded)
+	if header == nil {
+		return nil, nil
+	}
+	// 校验CRC
+	crc := binary.LittleEndian.Uint32(encoded[:4])
+	if crc != crc32.ChecksumIEEE(encoded[4:]) {
+		return nil, nil
+	}
+
+	idx := headerSize
+	key := encoded[idx : idx+int64(header.keySize)]
+	idx += int64(header.keySize)
+	compressedValue := encoded[idx : idx+int64(header.valueSize)]
+
+	// 解压 value
+	value, err := decompressValue(compressedValue)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LogRecord{
+		Key:   key,
+		Value: value,
+		Typ:   header.logRecordType,
+	}, nil
 }

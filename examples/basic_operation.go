@@ -1,8 +1,8 @@
 package main
 
 import (
-	bitcask "kv-go/db"
 	"fmt"
+	bitcask "kv-go/db"
 )
 
 var DirPath string = "/home/kv-go/tmp"
